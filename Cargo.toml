@@ -2,10 +2,10 @@
 members = ["bin", "lib"]
 
 [workspace.package]
-name = "advent-of-code"
 description = "Solutions for AOC puzzles"
 version = "0.0.0"
 edition = "2021"
 
 [workspace.dependencies]
 lib = { path = "./lib", version = "0.0.0" }
+probe = { path = "./probe", version = "0.0.0" }

@@ -36,3 +36,18 @@ impl Solutions {
 			.map(|func| func(input))
 	}
 }
+
+#[cfg(test)]
+#[macro_export]
+macro_rules! input {
+	($e:literal) => {
+		{
+			use indoc::indoc;
+			use std::io::Cursor;
+
+			let contents = indoc! { $e };
+
+			Box::new(Cursor::new(contents))
+		}
+	};
+}
