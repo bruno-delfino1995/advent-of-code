@@ -1,39 +1,38 @@
-use chrono::{Datelike, Local};
-use clap::Parser;
+use chrono::{DateTime, Datelike, Local};
 use regex::{Regex, RegexSet};
+
 use std::{collections::HashMap, str::FromStr};
 
-#[derive(Parser, Debug)]
-#[command(name = "Advent of Code", about = "Solution to AOC puzzles")]
-#[command(
-	next_line_help = true,
-	hide_possible_values = true,
-	disable_help_subcommand = true,
-	disable_version_flag = true,
-	help_expected = true
-)]
-pub struct Args {
-	#[arg(
-		value_name = "puzzle",
-		help = "Which puzzle should I run? (`year.day.phase` - YYYY.DD.P | YYYY.DD | DD.P | DD)"
-	)]
-	puzzle: Option<Puzzle>,
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Puzzle {
+	year: u16,
+	day: u8,
+	phase: u8,
 }
 
-fn main() {
-	let args = Args::parse();
+impl Puzzle {
+	pub fn year(&self) -> String {
+		self.year.to_string()
+	}
 
-	let puzzle = args.puzzle.unwrap_or_default();
+	pub fn day(&self) -> String {
+		self.day.to_string()
+	}
 
-	println!("{:?}", puzzle)
+	pub fn phase(&self) -> String {
+		self.phase.to_string()
+	}
 }
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct Puzzle(u16, u8, u8);
 
 impl Default for Puzzle {
 	fn default() -> Self {
 		let today = Local::now();
+		Self::from(today)
+	}
+}
+
+impl From<DateTime<Local>> for Puzzle {
+	fn from(today: DateTime<Local>) -> Self {
 		let is_december = today.month() == 12;
 
 		let year = if is_december {
@@ -44,7 +43,17 @@ impl Default for Puzzle {
 
 		let day = if is_december { today.day() } else { 25 };
 
-		Puzzle(year as u16, day as u8, 3)
+		Puzzle {
+			year: year as u16,
+			day: day as u8,
+			phase: 1,
+		}
+	}
+}
+
+impl From<&'static str> for Puzzle {
+	fn from(value: &'static str) -> Self {
+		Self::from_str(value).expect("invalid puzzle spec")
 	}
 }
 
@@ -61,7 +70,7 @@ impl FromStr for Puzzle {
 		let day = parse_day(matches.get("day"), &year, &current_puzzle)?;
 		let phase = parse_phase(matches.get("phase"), &current_puzzle)?;
 
-		Ok(Puzzle(year, day, phase))
+		Ok(Puzzle { year, day, phase })
 	}
 }
 
@@ -74,7 +83,6 @@ fn find_pattern(s: &str) -> Option<String> {
 	])
 	.unwrap();
 
-	// let matches: Option<> = set.matches(&puzzle).into_iter().collect::<Vec<usize>>().first();
 	let patterns: Vec<String> = set
 		.matches(s)
 		.into_iter()
@@ -111,7 +119,7 @@ fn find_matches(p: &str, s: &str) -> HashMap<String, String> {
 		.unwrap_or_default()
 }
 
-fn parse_year(y: Option<&String>, Puzzle(cy, _, _): &Puzzle) -> Result<u16, &'static str> {
+fn parse_year(y: Option<&String>, Puzzle { year: cy, .. }: &Puzzle) -> Result<u16, &'static str> {
 	match y {
 		None => Ok(*cy),
 		Some(y) => {
@@ -130,7 +138,13 @@ fn parse_year(y: Option<&String>, Puzzle(cy, _, _): &Puzzle) -> Result<u16, &'st
 	}
 }
 
-fn parse_day(d: Option<&String>, y: &u16, Puzzle(cy, cd, _): &Puzzle) -> Result<u8, &'static str> {
+fn parse_day(
+	d: Option<&String>,
+	y: &u16,
+	Puzzle {
+		year: cy, day: cd, ..
+	}: &Puzzle,
+) -> Result<u8, &'static str> {
 	match d {
 		None => Ok(*cd),
 		Some(d) => {
@@ -153,7 +167,7 @@ fn parse_day(d: Option<&String>, y: &u16, Puzzle(cy, cd, _): &Puzzle) -> Result<
 	}
 }
 
-fn parse_phase(p: Option<&String>, Puzzle(_, _, cp): &Puzzle) -> Result<u8, &'static str> {
+fn parse_phase(p: Option<&String>, Puzzle { phase: cp, .. }: &Puzzle) -> Result<u8, &'static str> {
 	match p {
 		None => Ok(*cp),
 		Some(p) => {
@@ -163,8 +177,8 @@ fn parse_phase(p: Option<&String>, Puzzle(_, _, cp): &Puzzle) -> Result<u8, &'st
 				return Err("phase starts at 1");
 			}
 
-			if p > 3 {
-				return Err("phase stops at 3 (3 = run all)");
+			if p > 2 {
+				return Err("phase stops at 2");
 			}
 
 			Ok(p)

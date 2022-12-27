@@ -3,15 +3,6 @@
 version = 3
 
 [[package]]
-name = "advent-of-code"
-version = "0.0.0"
-dependencies = [
- "chrono",
- "clap",
- "regex",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "0.7.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -34,6 +25,16 @@ name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+
+[[package]]
+name = "bin"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "lib",
+ "regex",
+]
 
 [[package]]
 name = "bitflags"
@@ -260,6 +261,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49409df3e3bf0856b916e2ceaca09ee28e6871cf7d9ce97a692cacfdb2a25a47"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "lib"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "regex",
 ]
 
 [[package]]

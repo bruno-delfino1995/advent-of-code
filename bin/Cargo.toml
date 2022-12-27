@@ -1,0 +1,11 @@
+[package]
+name = "bin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lib.workspace = true
+
+clap = { version = "4.0.29", features = ["derive"] }
+chrono = "0.4.23"
+regex = "1.7.0"
