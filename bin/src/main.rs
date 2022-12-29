@@ -1,5 +1,3 @@
-
-
 use clap::Parser;
 
 use std::fmt::Display;
