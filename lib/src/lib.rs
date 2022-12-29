@@ -1,12 +1,13 @@
-mod puzzle;
 mod prelude;
+mod puzzle;
 mod s2022;
 
 use std::{collections::HashMap, io::BufRead};
 
 pub use self::puzzle::Puzzle;
 
-pub type Solution = dyn Fn(Box<dyn BufRead>) -> String;
+pub type Input = Box<dyn BufRead>;
+pub type Solution = dyn Fn(Input) -> String;
 pub type Register = HashMap<Puzzle, &'static Solution>;
 pub struct Solutions(Register);
 
@@ -40,14 +41,12 @@ impl Solutions {
 #[cfg(test)]
 #[macro_export]
 macro_rules! input {
-	($e:literal) => {
-		{
-			use indoc::indoc;
-			use std::io::Cursor;
+	($contents:literal) => {{
+		use indoc::indoc;
+		use std::io::Cursor;
 
-			let contents = indoc! { $e };
+		let contents = indoc! { $contents };
 
-			Box::new(Cursor::new(contents))
-		}
-	};
+		Box::new(Cursor::new(contents))
+	}};
 }
