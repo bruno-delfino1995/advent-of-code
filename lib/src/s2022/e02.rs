@@ -13,6 +13,21 @@ enum Move {
 	Scissors = 3,
 }
 
+impl Move {
+	fn move_to(&self, planned: &Outcome) -> Move {
+		use Outcome::*;
+		use Move::*;
+
+		let mut moves = [Paper, Rock, Scissors].into_iter();
+
+		match planned {
+			Win => moves.find(|m| m > self),
+			Lose => moves.find(|m| m < self),
+			Draw => moves.find(|m| m == self),
+		}.unwrap()
+	}
+}
+
 impl Ord for Move {
 	fn cmp(&self, other: &Self) -> Ordering {
 		use Move::*;
@@ -85,6 +100,21 @@ impl From<&Round> for Outcome {
 	}
 }
 
+impl FromStr for Outcome {
+	type Err = String;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		use Outcome::*;
+
+		match s {
+			"X" => Ok(Lose),
+			"Y" => Ok(Draw),
+			"Z" => Ok(Win),
+			_ => Err(String::from("Invalid"))
+		}
+	}
+}
+
 peg::parser! {
 	grammar parser() for str {
 		rule theirs() -> Move
@@ -93,15 +123,25 @@ peg::parser! {
 		rule ours() -> Move
 			= n:$("X" / "Y" / "Z") {? Move::from_str(n).map_err(|_| "invalid")}
 
-		pub(super) rule parse() -> Round
+		rule plan() -> Outcome
+			= n:$("X" / "Y" / "Z") {? Outcome::from_str(n).map_err(|_| "invalid")}
+
+		pub(super) rule plain() -> Round
 			=	t:theirs() " " o:ours() { Round { theirs: t, ours: o } }
+
+		pub(super) rule strategy() -> Round
+			=	t:theirs() " " p:plan() {
+				let o = t.move_to(&p);
+
+				Round { theirs: t, ours: o }
+			}
 	}
 }
 
 pub fn basic(input: Input) -> String {
 	lines(input)
 		.map(|line| {
-			let round = parser::parse(&line).expect("invalid round");
+			let round = parser::plain(&line).expect("invalid round");
 
 			round.score() as usize
 		})
@@ -110,7 +150,14 @@ pub fn basic(input: Input) -> String {
 }
 
 pub fn complex(input: Input) -> String {
-	String::from("unimplemented")
+	lines(input)
+		.map(|line| {
+			let round = parser::strategy(&line).expect("invalid round");
+
+			round.score() as usize
+		})
+		.sum::<usize>()
+		.to_string()
 }
 
 #[cfg(test)]
@@ -129,5 +176,18 @@ mod test {
 		);
 
 		assert_eq!(basic(input), "15");
+	}
+
+	#[test]
+	fn second_example() {
+		let input = input!(
+			r#"
+			A Y
+			B X
+			C Z
+		"#
+		);
+
+		assert_eq!(complex(input), "12");
 	}
 }
