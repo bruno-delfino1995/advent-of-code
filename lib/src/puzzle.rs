@@ -75,7 +75,7 @@ impl FromStr for Puzzle {
 }
 
 fn find_pattern(s: &str) -> Option<String> {
-	let set = RegexSet::new(&[
+	let set = RegexSet::new([
 		r"^(?P<year>\d{4}).(?P<day>\d{1,2}).(?P<phase>\d)$",
 		r"^(?P<year>\d{4}).(?P<day>\d{1,2})$",
 		r"^(?P<day>\d{1,2}).(?P<phase>\d)$",

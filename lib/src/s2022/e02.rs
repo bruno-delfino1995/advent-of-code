@@ -18,15 +18,13 @@ impl Move {
 
 		matches!(
 			(self, other),
-			(Paper, Rock)
-			| (Rock, Scissors)
-			| (Scissors, Paper)
+			(Paper, Rock) | (Rock, Scissors) | (Scissors, Paper)
 		)
 	}
 
 	fn move_to(&self, planned: &Outcome) -> Move {
-		use Outcome::*;
 		use Move::*;
+		use Outcome::*;
 
 		let mut moves = [Paper, Rock, Scissors].into_iter();
 
@@ -34,7 +32,8 @@ impl Move {
 			Win => moves.find(|m| m > self),
 			Lose => moves.find(|m| m < self),
 			Draw => moves.find(|m| m == self),
-		}.unwrap()
+		}
+		.unwrap()
 	}
 
 	fn score(&self) -> usize {
@@ -133,7 +132,7 @@ impl FromStr for Outcome {
 			"X" => Ok(Lose),
 			"Y" => Ok(Draw),
 			"Z" => Ok(Win),
-			_ => Err(String::from("Invalid"))
+			_ => Err(String::from("Invalid")),
 		}
 	}
 }
@@ -166,7 +165,7 @@ pub fn basic(input: Input) -> String {
 		.map(|line| {
 			let round = parser::plain(&line).expect("invalid round");
 
-			round.score() as usize
+			round.score()
 		})
 		.sum::<usize>()
 		.to_string()
@@ -177,7 +176,7 @@ pub fn complex(input: Input) -> String {
 		.map(|line| {
 			let round = parser::strategy(&line).expect("invalid round");
 
-			round.score() as usize
+			round.score()
 		})
 		.sum::<usize>()
 		.to_string()
