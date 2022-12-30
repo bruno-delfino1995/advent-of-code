@@ -5,8 +5,7 @@ use std::{
 
 use crate::prelude::*;
 
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[repr(u8)]
+#[derive(Eq, PartialEq)]
 enum Move {
 	Paper = 2,
 	Rock = 1,
@@ -14,6 +13,17 @@ enum Move {
 }
 
 impl Move {
+	fn beats(&self, other: &Move) -> bool {
+		use Move::*;
+
+		matches!(
+			(self, other),
+			(Paper, Rock)
+			| (Rock, Scissors)
+			| (Scissors, Paper)
+		)
+	}
+
 	fn move_to(&self, planned: &Outcome) -> Move {
 		use Outcome::*;
 		use Move::*;
@@ -26,22 +36,26 @@ impl Move {
 			Draw => moves.find(|m| m == self),
 		}.unwrap()
 	}
+
+	fn score(&self) -> usize {
+		use Move::*;
+
+		match self {
+			Paper => 2,
+			Rock => 1,
+			Scissors => 3,
+		}
+	}
 }
 
 impl Ord for Move {
 	fn cmp(&self, other: &Self) -> Ordering {
-		use Move::*;
-
-		match (self, other) {
-			(Paper, Paper) => Equal,
-			(Paper, Rock) => Greater,
-			(Paper, Scissors) => Less,
-			(Rock, Paper) => Less,
-			(Rock, Rock) => Equal,
-			(Rock, Scissors) => Greater,
-			(Scissors, Paper) => Greater,
-			(Scissors, Rock) => Less,
-			(Scissors, Scissors) => Equal,
+		if self.beats(other) {
+			Greater
+		} else if other.beats(self) {
+			Less
+		} else {
+			Equal
 		}
 	}
 }
@@ -73,29 +87,38 @@ struct Round {
 }
 
 impl Round {
-	fn score(&self) -> u8 {
-		let outcome: Outcome = self.into();
-		let shape = &self.ours;
-
-		outcome as u8 + *shape as u8
-	}
-}
-
-#[repr(u8)]
-enum Outcome {
-	Win = 6,
-	Draw = 3,
-	Lose = 0,
-}
-
-impl From<&Round> for Outcome {
-	fn from(value: &Round) -> Self {
+	fn outcome(&self) -> Outcome {
 		use Outcome::*;
 
-		match value.ours.cmp(&value.theirs) {
+		match self.ours.cmp(&self.theirs) {
 			Less => Lose,
 			Equal => Draw,
 			Greater => Win,
+		}
+	}
+
+	fn score(&self) -> usize {
+		let outcome = self.outcome();
+		let shape = &self.ours;
+
+		outcome.score() + shape.score()
+	}
+}
+
+enum Outcome {
+	Win,
+	Draw,
+	Lose,
+}
+
+impl Outcome {
+	fn score(&self) -> usize {
+		use Outcome::*;
+
+		match self {
+			Win => 6,
+			Draw => 3,
+			Lose => 0,
 		}
 	}
 }
@@ -118,13 +141,13 @@ impl FromStr for Outcome {
 peg::parser! {
 	grammar parser() for str {
 		rule theirs() -> Move
-			= n:$("A" / "B" / "C") {? Move::from_str(n).map_err(|_| "invalid")}
+			= n:$("A" / "B" / "C") {? Move::from_str(n).map_err(|_| "invalid") }
 
 		rule ours() -> Move
-			= n:$("X" / "Y" / "Z") {? Move::from_str(n).map_err(|_| "invalid")}
+			= n:$("X" / "Y" / "Z") {? Move::from_str(n).map_err(|_| "invalid") }
 
 		rule plan() -> Outcome
-			= n:$("X" / "Y" / "Z") {? Outcome::from_str(n).map_err(|_| "invalid")}
+			= n:$("X" / "Y" / "Z") {? Outcome::from_str(n).map_err(|_| "invalid") }
 
 		pub(super) rule plain() -> Round
 			=	t:theirs() " " o:ours() { Round { theirs: t, ours: o } }
