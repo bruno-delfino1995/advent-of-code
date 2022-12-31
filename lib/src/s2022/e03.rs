@@ -1,8 +1,9 @@
+use itertools::Itertools;
+use std::convert::TryInto;
 use std::{collections::HashSet, str::FromStr};
 
 use crate::prelude::*;
 
-#[derive(Debug)]
 struct Item(char);
 
 impl Item {
@@ -48,11 +49,50 @@ impl Rucksack {
 
 		Item(*item)
 	}
+
+	fn items(&self) -> HashSet<char> {
+		let len = self.left.len() + self.right.len() - 1;
+		let mut items = HashSet::with_capacity(len);
+
+		items.extend(self.left.iter());
+		items.extend(self.right.iter());
+
+		items
+	}
+}
+
+struct Group([Rucksack; 3]);
+
+impl Group {
+	fn badge(&self) -> Item {
+		let [ref first, ref second, ref third] = self.0;
+
+		let shared = HashSet::from_iter(first.items().intersection(&second.items()).copied());
+
+		let items = third.items();
+		let badge = shared.intersection(&items).last().unwrap();
+
+		Item(*badge)
+	}
 }
 
 pub fn basic(input: Input) -> String {
 	lines(input)
 		.map(|line| Rucksack::from_str(&line).unwrap().overlap().value())
+		.sum::<usize>()
+		.to_string()
+}
+
+pub fn complex(input: Input) -> String {
+	lines(input)
+		.map(|line| Rucksack::from_str(&line).unwrap())
+		.chunks(3)
+		.into_iter()
+		.map(|group| {
+			let boxed = group.collect_vec().try_into().unwrap();
+
+			Group(boxed).badge().value()
+		})
 		.sum::<usize>()
 		.to_string()
 }
@@ -76,5 +116,21 @@ mod test {
 		);
 
 		assert_eq!(basic(input), "157");
+	}
+
+	#[test]
+	fn second_example() {
+		let input = input!(
+			r#"
+			vJrwpWtwJgWrhcsFMMfFFhFp
+			jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+			PmmdzqPrVvPwwTWBwg
+			wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+			ttgJtRGJQctTZtZT
+			CrZsJsPPZsGzwwsLwLmpwMDw
+		"#
+		);
+
+		assert_eq!(complex(input), "70");
 	}
 }
