@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::{ops::RangeInclusive, str::FromStr};
 
 use itertools::Itertools;
@@ -14,6 +15,13 @@ impl Assignment {
 		let above = self.0.end() >= other.0.end();
 
 		below && above
+	}
+
+	fn intersects(&self, other: &Self) -> bool {
+		let ours: HashSet<usize> = HashSet::from_iter(self.0.clone());
+		let theirs: HashSet<usize> = HashSet::from_iter(other.0.clone());
+
+		!ours.intersection(&theirs).collect_vec().is_empty()
 	}
 }
 
@@ -51,6 +59,23 @@ pub fn basic(input: Input) -> String {
 		.to_string()
 }
 
+pub fn complex(input: Input) -> String {
+	lines(input)
+		.map(|line| {
+			let (first, second) = line
+				.split(',')
+				.map(|assign| Assignment::from_str(assign).unwrap())
+				.collect_tuple()
+				.unwrap();
+
+			first.intersects(&second)
+		})
+		.filter(|&c| c)
+		.collect_vec()
+		.len()
+		.to_string()
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
@@ -70,5 +95,21 @@ mod test {
 		);
 
 		assert_eq!(basic(input), "2");
+	}
+
+	#[test]
+	fn second_example() {
+		let input = input!(
+			r#"
+			2-4,6-8
+			2-3,4-5
+			5-7,7-9
+			2-8,3-7
+			6-6,4-6
+			2-6,4-8
+		"#
+		);
+
+		assert_eq!(complex(input), "4");
 	}
 }
