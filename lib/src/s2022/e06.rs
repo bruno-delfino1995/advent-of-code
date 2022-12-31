@@ -80,6 +80,14 @@ pub fn basic(input: Input) -> String {
 	start_at.to_string()
 }
 
+pub fn complex(input: Input) -> String {
+	let message: String = lines(input).collect();
+
+	let start_at = marker(&message, 14) + 1;
+
+	start_at.to_string()
+}
+
 #[cfg(test)]
 mod test {
 	use super::*;
@@ -97,6 +105,21 @@ mod test {
 
 		for (input, result) in cases {
 			assert_eq!(basic(input), result)
+		}
+	}
+
+	#[test]
+	fn second_example() {
+		let cases = [
+			(input!("mjqjpqmgbljsphdztnvjfqwrcgsmlb"), "19"),
+			(input!("bvwbjplbgvbhsrlpgdmjqwftvncz"), "23"),
+			(input!("nppdvjthqldpwncqszvftbrmjlhg"), "23"),
+			(input!("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), "29"),
+			(input!("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), "26"),
+		];
+
+		for (input, result) in cases {
+			assert_eq!(complex(input), result)
 		}
 	}
 }

@@ -21,6 +21,7 @@ pub fn solutions() -> Register {
 	register.insert(Puzzle::from("2022.05.1"), &e05::basic);
 	register.insert(Puzzle::from("2022.05.2"), &e05::complex);
 	register.insert(Puzzle::from("2022.06.1"), &e06::basic);
+	register.insert(Puzzle::from("2022.06.2"), &e06::complex);
 
 	register
 }
