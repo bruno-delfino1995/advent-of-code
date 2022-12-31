@@ -137,33 +137,44 @@ impl FromStr for Outcome {
 	}
 }
 
-peg::parser! {
-	grammar parser() for str {
-		rule theirs() -> Move
-			= n:$("A" / "B" / "C") {? Move::from_str(n).map_err(|_| "invalid") }
+mod parser {
+	use super::*;
+	use nom::{
+		bytes::complete::tag, character::complete::one_of, combinator::{map_res, map}, sequence::tuple,
+		IResult,
+	};
 
-		rule ours() -> Move
-			= n:$("X" / "Y" / "Z") {? Move::from_str(n).map_err(|_| "invalid") }
+	fn parse_move(s: &str) -> IResult<&str, Move> {
+		map_res(one_of("ABCXYZ"), |s| Move::from_str(&s.to_string()))(s)
+	}
 
-		rule plan() -> Outcome
-			= n:$("X" / "Y" / "Z") {? Outcome::from_str(n).map_err(|_| "invalid") }
+	fn parse_plan(s: &str) -> IResult<&str, Outcome> {
+		map_res(one_of("XYZ"), |s| Outcome::from_str(&s.to_string()))(s)
+	}
 
-		pub(super) rule plain() -> Round
-			=	t:theirs() " " o:ours() { Round { theirs: t, ours: o } }
+	pub(super) fn plain(s: &str) -> IResult<&str, Round> {
+		map(
+			tuple((parse_move, tag(" "), parse_move)),
+			|(theirs, _, ours)| Round { theirs, ours },
+		)(s)
+	}
 
-		pub(super) rule strategy() -> Round
-			=	t:theirs() " " p:plan() {
-				let o = t.move_to(&p);
+	pub(super) fn strategy(s: &str) -> IResult<&str, Round> {
+		map(
+			tuple((parse_move, tag(" "), parse_plan)),
+			|(theirs, _, planned)| {
+				let ours = theirs.move_to(&planned);
 
-				Round { theirs: t, ours: o }
-			}
+				Round { theirs, ours }
+			},
+		)(s)
 	}
 }
 
 pub fn basic(input: Input) -> String {
 	lines(input)
 		.map(|line| {
-			let round = parser::plain(&line).expect("invalid round");
+			let (_, round) = parser::plain(&line).expect("invalid round");
 
 			round.score()
 		})
@@ -174,7 +185,7 @@ pub fn basic(input: Input) -> String {
 pub fn complex(input: Input) -> String {
 	lines(input)
 		.map(|line| {
-			let round = parser::strategy(&line).expect("invalid round");
+			let (_, round) = parser::strategy(&line).expect("invalid round");
 
 			round.score()
 		})
