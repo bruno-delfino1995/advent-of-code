@@ -140,7 +140,10 @@ impl FromStr for Outcome {
 mod parser {
 	use super::*;
 	use nom::{
-		bytes::complete::tag, character::complete::one_of, combinator::{map_res, map}, sequence::tuple,
+		bytes::complete::tag,
+		character::complete::one_of,
+		combinator::{map, map_res},
+		sequence::tuple,
 		IResult,
 	};
 

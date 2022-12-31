@@ -29,24 +29,42 @@ impl Piles {
 		}
 	}
 
+	fn apply_retain(&mut self, command: Command) {
+		let from = self.0.get_mut(command.from).unwrap();
+		let mut elems = from.drain(0..command.amount).collect_vec();
+		elems.reverse();
+		let to = self.0.get_mut(command.to).unwrap();
+
+		for el in elems {
+			to.push_front(el);
+		}
+	}
+
 	fn heads(&self) -> Vec<char> {
-		self.0.iter().filter_map(|pile| pile.front()).map(|c| c.0).collect()
+		self.0
+			.iter()
+			.filter_map(|pile| pile.front())
+			.map(|c| c.0)
+			.collect()
 	}
 }
 
 mod parser {
 	use super::*;
 	use nom::{
-		bytes::complete::{tag, take}, combinator::{map, map_res}, sequence::{delimited, preceded, tuple},
 		branch::alt,
-		IResult, multi::separated_list0, character::complete::digit1,
+		bytes::complete::{tag, take},
+		character::complete::digit1,
+		combinator::{map, map_res},
+		multi::separated_list0,
+		sequence::{delimited, preceded, tuple},
+		IResult,
 	};
 
 	fn parse_slot(s: &str) -> IResult<&str, Option<Container>> {
-		let container = map(
-			delimited(tag("["), take(1usize), tag("]")),
-			|s: &str| Some(Container(s.chars().next().unwrap()))
-		);
+		let container = map(delimited(tag("["), take(1usize), tag("]")), |s: &str| {
+			Some(Container(s.chars().next().unwrap()))
+		});
 
 		let space = map(tag("   "), |_| None);
 
@@ -62,10 +80,7 @@ mod parser {
 	}
 
 	fn parse_column(s: &str) -> IResult<&str, usize> {
-		map(
-			parse_number,
-			|n| n - 1
-		)(s)
+		map(parse_number, |n| n - 1)(s)
 	}
 
 	pub(super) fn command(s: &str) -> IResult<&str, Command> {
@@ -73,10 +88,11 @@ mod parser {
 		let from = preceded(tag(" from "), parse_column);
 		let to = preceded(tag(" to "), parse_column);
 
-		map(
-			tuple((amount, from, to)),
-			|(amount, from, to)| Command { amount, from, to, }
-		)(s)
+		map(tuple((amount, from, to)), |(amount, from, to)| Command {
+			amount,
+			from,
+			to,
+		})(s)
 	}
 }
 
@@ -97,16 +113,48 @@ fn transpose<T>(v: Vec<Vec<Option<T>>>) -> Vec<VecDeque<T>> {
 pub fn basic(input: Input) -> String {
 	let mut lines = lines(input);
 
-	let crates = (&mut lines).map_while(|l| {
-		all_consuming(parser::ship)(&l).finish().ok().map(|(_, v)| v)
-	}).collect_vec();
+	let crates = (&mut lines)
+		.map_while(|l| {
+			all_consuming(parser::ship)(&l)
+				.finish()
+				.ok()
+				.map(|(_, v)| v)
+		})
+		.collect_vec();
 	let mut piles = Piles(transpose(crates));
 
 	assert!(lines.next().is_some());
 
-	let commands = lines.map(|l| parser::command(&l).ok().map(|(_, c)| c).unwrap()).collect_vec();
+	let commands = lines
+		.map(|l| parser::command(&l).ok().map(|(_, c)| c).unwrap())
+		.collect_vec();
 	for c in commands {
 		piles.apply(c);
+	}
+
+	piles.heads().into_iter().collect()
+}
+
+pub fn complex(input: Input) -> String {
+	let mut lines = lines(input);
+
+	let crates = (&mut lines)
+		.map_while(|l| {
+			all_consuming(parser::ship)(&l)
+				.finish()
+				.ok()
+				.map(|(_, v)| v)
+		})
+		.collect_vec();
+	let mut piles = Piles(transpose(crates));
+
+	assert!(lines.next().is_some());
+
+	let commands = lines
+		.map(|l| parser::command(&l).ok().map(|(_, c)| c).unwrap())
+		.collect_vec();
+	for c in commands {
+		piles.apply_retain(c);
 	}
 
 	piles.heads().into_iter().collect()
@@ -134,5 +182,24 @@ mod test {
 		);
 
 		assert_eq!(basic(input), "CMZ");
+	}
+
+	#[test]
+	fn second_example() {
+		let input = input!(
+			r#"
+			    [D]    
+			[N] [C]    
+			[Z] [M] [P]
+			 1   2   3
+
+			move 1 from 2 to 1
+			move 3 from 1 to 3
+			move 2 from 2 to 1
+			move 1 from 1 to 2
+		"#
+		);
+
+		assert_eq!(complex(input), "MCD");
 	}
 }
