@@ -310,8 +310,23 @@ pub fn basic(input: Input) -> String {
 		.to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	String::from("unimplemented")
+pub fn complex(input: Input) -> String {
+	const FS_SIZE: usize = 70000000;
+	const UPDATE_SIZE: usize = 30000000;
+
+	let shell = lines(input).fold(Shell::new(), |shell, line| shell.parse(&line));
+	let root = shell.close().root().unwrap();
+	let unused = FS_SIZE - root.size();
+	let to_delete = UPDATE_SIZE - unused;
+
+	INodeWrapper(root)
+		.into_iter()
+		.filter(|p| p.is_dir())
+		.map(|d| d.size())
+		.filter(|&s| s > to_delete)
+		.min()
+		.unwrap_or_default()
+		.to_string()
 }
 
 #[cfg(test)]
@@ -356,10 +371,32 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			3
+			$ cd /
+			$ ls
+			dir a
+			14848514 b.txt
+			8504156 c.dat
+			dir d
+			$ cd a
+			$ ls
+			dir e
+			29116 f
+			2557 g
+			62596 h.lst
+			$ cd e
+			$ ls
+			584 i
+			$ cd ..
+			$ cd ..
+			$ cd d
+			$ ls
+			4060174 j
+			8033020 d.log
+			5626152 d.ext
+			7214296 k
 		"#
 		);
 
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input), "24933642")
 	}
 }
