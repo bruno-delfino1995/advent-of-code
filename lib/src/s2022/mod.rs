@@ -4,6 +4,7 @@ mod e03;
 mod e04;
 mod e05;
 mod e06;
+mod e07;
 
 use crate::prelude::*;
 
@@ -22,6 +23,8 @@ pub fn solutions() -> Register {
 	register.insert(Puzzle::from("2022.05.2"), &e05::complex);
 	register.insert(Puzzle::from("2022.06.1"), &e06::basic);
 	register.insert(Puzzle::from("2022.06.2"), &e06::complex);
+	register.insert(Puzzle::from("2022.07.1"), &e07::basic);
+	register.insert(Puzzle::from("2022.07.2"), &e07::complex);
 
 	register
 }

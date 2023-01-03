@@ -1,11 +1,11 @@
-use itertools::Itertools;
 use itertools::FoldWhile::{Continue, Done};
+use itertools::Itertools;
 use std::collections::VecDeque;
 
 use crate::prelude::*;
 
 #[derive(Debug)]
-struct Reader{
+struct Reader {
 	tail: Option<char>,
 	size: usize,
 	data: VecDeque<(usize, char)>,
@@ -24,7 +24,7 @@ impl Reader {
 
 	const START: usize = 'a' as usize;
 
-	pub fn read(&mut self, pair@(_, c): (usize, char)) {
+	pub fn read(&mut self, pair @ (_, c): (usize, char)) {
 		if self.is_full() {
 			let idx = self.tail.unwrap() as usize - Self::START;
 			self.seen[idx] = self.seen[idx].saturating_sub(1);
@@ -35,10 +35,8 @@ impl Reader {
 		}
 
 		let idx = c as usize - Self::START;
-		self.seen[idx] = self.seen[idx] + 1;
+		self.seen[idx] += 1;
 		self.data.push_front(pair);
-
-		return;
 	}
 
 	pub fn is_full(&self) -> bool {
@@ -61,15 +59,19 @@ impl Reader {
 fn marker(message: &str, size: usize) -> usize {
 	let mut collector = Reader::new(size);
 
-	message.chars().enumerate().fold_while(0, |_, el| {
-		collector.read(el);
+	message
+		.chars()
+		.enumerate()
+		.fold_while(0, |_, el| {
+			collector.read(el);
 
-		if collector.is_full() && collector.distinct() {
-			Done(collector.last_index())
-		} else {
-			Continue(0)
-		}
-	}).into_inner()
+			if collector.is_full() && collector.distinct() {
+				Done(collector.last_index())
+			} else {
+				Continue(0)
+			}
+		})
+		.into_inner()
 }
 
 pub fn basic(input: Input) -> String {
