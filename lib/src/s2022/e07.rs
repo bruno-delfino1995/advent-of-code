@@ -6,62 +6,68 @@ use std::rc::{Rc, Weak};
 use crate::prelude::*;
 use INode::*;
 
+type SharedINode = Rc<RefCell<INode>>;
+type LinkedINode = Weak<RefCell<INode>>;
+
 #[derive(Clone)]
 enum INode {
 	Directory {
 		name: String,
-		parent: Option<Weak<INode>>,
-		children: RefCell<HashMap<String, Rc<INode>>>,
+		parent: Option<LinkedINode>,
+		children: HashMap<String, SharedINode>,
 	},
 	File {
 		name: String,
 		size: usize,
-		parent: Weak<INode>,
+		parent: LinkedINode,
 	},
 }
 
 impl INode {
-	fn dir(name: String, parent: Option<&Rc<INode>>) -> Self {
-		Directory {
+	fn dir(name: String, parent: Option<&SharedINode>) -> SharedINode {
+		let dir = Directory {
 			name,
 			parent: parent.map(Rc::downgrade),
-			children: RefCell::new(HashMap::new()),
-		}
+			children: HashMap::new(),
+		};
+
+		Rc::new(RefCell::new(dir))
 	}
 
-	fn file(name: String, size: usize, parent: &Rc<INode>) -> Self {
-		File {
+	fn file(name: String, size: usize, parent: &SharedINode) -> SharedINode {
+		let file = File {
 			name,
 			size,
 			parent: Rc::downgrade(parent),
-		}
+		};
+
+		Rc::new(RefCell::new(file))
 	}
 
 	fn is_dir(&self) -> bool {
 		matches!(self, Directory { .. })
 	}
 
-	fn add(&self, child: &Rc<INode>) {
+	fn add(&mut self, child: &SharedINode) {
 		match self {
 			File { .. } => (),
 			Directory { children, .. } => {
 				children
-					.borrow_mut()
-					.insert(child.name().to_string(), Rc::clone(child));
+					.insert(child.borrow().name().to_string(), Rc::clone(child));
 			}
 		}
 	}
 
-	fn parent(&self) -> Option<Rc<INode>> {
+	fn parent(&self) -> Option<SharedINode> {
 		match self {
 			File { parent, .. } => Weak::upgrade(parent),
 			Directory { parent, .. } => parent.as_ref().and_then(Weak::upgrade),
 		}
 	}
 
-	fn children(&self) -> Option<Ref<HashMap<String, Rc<INode>>>> {
+	fn children(&self) -> Option<&HashMap<String, SharedINode>> {
 		match self {
-			Directory { children, .. } => Some(children.borrow()),
+			Directory { children, .. } => Some(children),
 			File { .. } => None,
 		}
 	}
@@ -76,9 +82,8 @@ impl INode {
 	fn size(&self) -> usize {
 		match self {
 			Directory { children, .. } => children
-				.borrow()
 				.iter()
-				.fold(0, |acc, (_, el)| acc + el.size()),
+				.fold(0, |acc, (_, el)| acc + el.borrow().size()),
 			File { size, .. } => *size,
 		}
 	}
@@ -93,12 +98,11 @@ impl INode {
 					"{}- {} (dir) (child={})",
 					prefix,
 					name,
-					children.borrow().len()
+					children.len()
 				)?;
 				children
-					.borrow()
 					.iter()
-					.try_for_each(|(_, child)| child.tree(padding + 1, f))
+					.try_for_each(|(_, child)| child.borrow().tree(padding + 1, f))
 			}
 			File { name, .. } => writeln!(f, "{}- {} (file, size={})", prefix, name, self.size()),
 		}
@@ -111,10 +115,10 @@ impl fmt::Debug for INode {
 	}
 }
 
-struct INodeWrapper(Rc<INode>);
+struct INodeWrapper(SharedINode);
 
 impl IntoIterator for INodeWrapper {
-	type Item = Rc<INode>;
+	type Item = SharedINode;
 
 	type IntoIter = INodeIter;
 
@@ -129,13 +133,13 @@ impl IntoIterator for INodeWrapper {
 
 #[derive(Default)]
 struct INodeIter {
-	root: Option<Rc<INode>>,
-	children: Vec<Rc<INode>>,
+	root: Option<SharedINode>,
+	children: Vec<SharedINode>,
 	parent: Option<Box<INodeIter>>,
 }
 
 impl Iterator for INodeIter {
-	type Item = Rc<INode>;
+	type Item = SharedINode;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		let has_root = self.root.is_some();
@@ -152,6 +156,7 @@ impl Iterator for INodeIter {
 		if has_root {
 			let root = self.root.take().unwrap();
 			self.children = root
+				.borrow()
 				.children()
 				.map(|c| c.values().cloned().collect())
 				.unwrap_or_default();
@@ -164,7 +169,8 @@ impl Iterator for INodeIter {
 		}
 
 		let curr = self.children.pop().unwrap();
-		match *curr {
+		let check = curr.borrow().to_owned();
+		match check {
 			File { .. } => Some(curr),
 			Directory { .. } => {
 				*self = INodeIter {
@@ -180,8 +186,8 @@ impl Iterator for INodeIter {
 }
 
 struct Runtime {
-	root: Option<Rc<INode>>,
-	cwd: Option<Rc<INode>>,
+	root: Option<SharedINode>,
+	cwd: Option<SharedINode>,
 }
 
 impl Runtime {
@@ -192,16 +198,16 @@ impl Runtime {
 		}
 	}
 
-	fn root(&self) -> Option<Rc<INode>> {
+	fn root(&self) -> Option<SharedINode> {
 		self.root.as_ref().map(Rc::clone)
 	}
 
-	fn cwd(&self) -> Option<Rc<INode>> {
+	fn cwd(&self) -> Option<SharedINode> {
 		self.cwd.as_ref().map(Rc::clone)
 	}
 
-	fn enter(&mut self, dir: &Rc<INode>) {
-		match **dir {
+	fn enter(&mut self, dir: &SharedINode) {
+		match *dir.borrow() {
 			File { .. } => (),
 			Directory { .. } => {
 				if self.root.is_none() {
@@ -214,7 +220,7 @@ impl Runtime {
 	}
 
 	fn up(&mut self) {
-		match &self.cwd.as_ref().and_then(|cwd| cwd.parent()) {
+		match &self.cwd.as_ref().and_then(|cwd| cwd.borrow().parent()) {
 			None => (),
 			Some(cwd) => {
 				self.cwd = Some(Rc::clone(cwd));
@@ -254,7 +260,7 @@ impl Shell {
 		}
 
 		let entry = self.runtime.cwd().and_then(|cwd| {
-			cwd.children()
+			cwd.borrow().children()
 				.and_then(|children| children.get(dir).map(|dir| self.runtime.enter(dir)))
 		});
 
@@ -262,7 +268,7 @@ impl Shell {
 			Some(_) => (),
 			None => {
 				let cwd = self.runtime.cwd();
-				let dir = Rc::new(INode::dir(String::from(dir), cwd.as_ref()));
+				let dir = INode::dir(String::from(dir), cwd.as_ref());
 
 				self.runtime.enter(&dir)
 			}
@@ -277,16 +283,16 @@ impl Shell {
 		let node = if desc.starts_with("dir") {
 			let name = String::from(desc.strip_prefix("dir ").unwrap());
 
-			Rc::new(INode::dir(name, Some(&cwd)))
+			INode::dir(name, Some(&cwd))
 		} else {
 			let (size, name) = desc.split_once(' ').unwrap();
 			let size = size.parse::<usize>().unwrap();
 			let name = String::from(name);
 
-			Rc::new(INode::file(name, size, &cwd))
+			INode::file(name, size, &cwd)
 		};
 
-		cwd.add(&node);
+		cwd.borrow_mut().add(&node);
 
 		self
 	}
@@ -303,8 +309,8 @@ pub fn basic(input: Input) -> String {
 
 	INodeWrapper(root)
 		.into_iter()
-		.filter(|p| p.is_dir())
-		.map(|d| d.size())
+		.filter(|p| p.borrow().is_dir())
+		.map(|d| d.borrow().size())
 		.filter(|&s| s < 100000)
 		.sum::<usize>()
 		.to_string()
@@ -316,13 +322,13 @@ pub fn complex(input: Input) -> String {
 
 	let shell = lines(input).fold(Shell::new(), |shell, line| shell.parse(&line));
 	let root = shell.close().root().unwrap();
-	let unused = FS_SIZE - root.size();
+	let unused = FS_SIZE - root.borrow().size();
 	let to_delete = UPDATE_SIZE - unused;
 
 	INodeWrapper(root)
 		.into_iter()
-		.filter(|p| p.is_dir())
-		.map(|d| d.size())
+		.filter(|p| p.borrow().is_dir())
+		.map(|d| d.borrow().size())
 		.filter(|&s| s > to_delete)
 		.min()
 		.unwrap_or_default()
