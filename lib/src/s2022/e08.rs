@@ -1,12 +1,74 @@
-use std::collections::HashSet;
-
-use itertools::Itertools;
+use std::{cmp::Ordering::*, collections::HashSet, fmt};
 
 use crate::prelude::*;
+use Axis::*;
+use Direction::*;
 
-type Position = (usize, usize);
 type Height = usize;
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum Axis {
+	X,
+	Y,
+}
+
+impl From<Direction> for Axis {
+	fn from(value: Direction) -> Self {
+		match value {
+			Left | Right => X,
+			Up | Down => Y,
+		}
+	}
+}
+
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+struct Position {
+	row: usize,
+	col: usize,
+}
+
+impl Position {
+	fn new(row: usize, col: usize) -> Self {
+		Self { row, col }
+	}
+
+	fn to_linear(self, size: usize) -> usize {
+		let row = self.row * size;
+		let col = self.col;
+
+		row + col
+	}
+
+	fn from_linear(idx: usize, size: usize) -> Self {
+		let row = idx / size;
+		let col = idx - row * size;
+
+		Position { row, col }
+	}
+
+	fn mirror(&self, size: usize, axis: Axis) -> Self {
+		let mirror = |n| (n as isize - (size - 1) as isize).unsigned_abs();
+
+		match axis {
+			X => Position {
+				row: self.row,
+				col: mirror(self.col),
+			},
+			Y => Position {
+				row: mirror(self.row),
+				col: self.col,
+			},
+		}
+	}
+}
+
+impl fmt::Debug for Position {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "({}, {})", self.row, self.col)
+	}
+}
+
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 enum Direction {
 	Up,
 	Right,
@@ -32,94 +94,178 @@ impl Forest {
 		self.grid.extend(row)
 	}
 
-	fn at(&self, position: Position) -> Option<&Height> {
-		let row = position.0 * self.size;
-		let column = position.1;
+	fn at(&self, pos: &Position) -> Option<Height> {
+		let idx = pos.to_linear(self.size);
 
-		self.grid.get(row + column)
+		self.grid.get(idx).copied()
 	}
 
-	fn scan_from(
-		&self,
-		direction: Direction,
-	) -> Box<dyn Iterator<Item = (Position, &Height)> + '_> {
-		let from_left = |n| {
-			let row = n / self.size;
-			let col = n - row * self.size;
+	fn borders(&self) -> Vec<(Position, Direction)> {
+		let top = (0..self.size).map(|col| (Position::new(0, col), Down));
+		let right = (0..self.size).map(|row| (Position::new(row, self.size - 1), Left));
+		let bottom = top.clone().rev().map(|(p, _)| (p.mirror(self.size, Y), Up));
+		let left = right
+			.clone()
+			.rev()
+			.map(|(p, _)| (p.mirror(self.size, X), Right));
 
-			(row, col)
+		top.chain(right).chain(bottom).chain(left).collect()
+	}
+
+	fn visible_for(&self, observer: &mut dyn Observer) -> Vec<(Position, Height)> {
+		let pos = observer.location();
+		let dir = observer.looking();
+
+		let to_check: Box<dyn Iterator<Item = Position>> = match dir {
+			Up => Box::new((0..=pos.row).rev().map(|row| Position::new(row, pos.col))),
+			Right => Box::new((pos.col..self.size).map(|col| Position::new(pos.row, col))),
+			Down => Box::new((pos.row..self.size).map(|row| Position::new(row, pos.col))),
+			Left => Box::new((0..=pos.col).rev().map(|col| Position::new(pos.row, col))),
 		};
 
-		let invert = |n| (n as isize - (self.size - 1) as isize).unsigned_abs();
-
-		let as_pos: Box<dyn Fn(usize) -> Position> = match direction {
-			Direction::Up => Box::new(move |n: usize| -> Position {
-				let (row, col) = from_left(n);
-
-				(col, row)
-			}),
-			Direction::Right => Box::new(move |n: usize| -> Position {
-				let (row, col) = from_left(n);
-
-				(row, invert(col))
-			}),
-			Direction::Down => Box::new(move |n: usize| -> Position {
-				let (row, col) = from_left(n);
-
-				(invert(col), row)
-			}),
-			Direction::Left => Box::new(from_left),
-		};
-
-		let positions = 0..(self.size * self.size);
-
-		let iter = positions
-			.into_iter()
-			.map(as_pos)
-			.map(|pos| (pos, self.at(pos).unwrap()));
-
-		Box::new(iter)
+		to_check
+			.filter_map(|pos| {
+				self.at(&pos).and_then(|height| {
+					if observer.detects(&(pos, height)) {
+						Some((pos, height))
+					} else {
+						None
+					}
+				})
+			})
+			.collect()
 	}
 
 	fn visible_from_outside(&self) -> HashSet<Position> {
-		use Direction::*;
+		self.borders()
+			.into_iter()
+			.flat_map(|(origin, direction)| {
+				let mut elf = Elf::new(origin, direction);
 
-		let by_col: fn(&(Position, &Height)) -> usize = |((_, c), _)| *c;
-		let by_row: fn(&(Position, &Height)) -> usize = |((r, _), _)| *r;
-		let scans = [
-			(Up, by_col),
-			(Right, by_row),
-			(Down, by_col),
-			(Left, by_row),
-		];
+				self.visible_for(&mut elf)
+			})
+			.map(|(p, _)| p)
+			.collect()
+	}
 
-		let mut can_see = HashSet::new();
+	fn scenic_scores(&self) -> Vec<(Position, usize)> {
+		const DIRECTIONS: [Direction; 4] = [Up, Right, Down, Left];
 
-		for (direction, grouper) in scans {
-			for (_, group) in &self.scan_from(direction).group_by(grouper) {
-				let (_, visible) = group.fold(
-					(-1, HashSet::new()),
-					|(largest, mut visible), (pos, &height)| {
-						let height = height as isize;
+		self.grid
+			.iter()
+			.enumerate()
+			.map(|(idx, h)| {
+				let pos = Position::from_linear(idx, self.size);
 
-						if height > largest {
-							visible.insert(pos);
-						}
+				let score =
+					DIRECTIONS
+						.into_iter()
+						.map(|d| {
+							let mut tree_house = TreeHouse::new(*h, pos, d);
 
-						(std::cmp::max(largest, height), visible)
-					},
-				);
+							self.visible_for(&mut tree_house).len()
+						})
+						.product();
 
-				can_see.extend(visible);
-			}
-		}
-
-		can_see
+				(pos, score)
+			})
+			.collect()
 	}
 }
 
-pub fn basic(input: Input) -> String {
-	let forest = lines(input)
+trait Observer {
+	fn location(&self) -> Position;
+
+	fn looking(&self) -> Direction;
+
+	fn detects(&mut self, tree: &(Position, Height)) -> bool;
+}
+
+struct Elf {
+	origin: Position,
+	direction: Direction,
+	latest: Option<Height>,
+}
+
+impl Elf {
+	fn new(pos: Position, dir: Direction) -> Self {
+		Self {
+			origin: pos,
+			direction: dir,
+			latest: None,
+		}
+	}
+}
+
+impl Observer for Elf {
+	fn location(&self) -> Position {
+		self.origin
+	}
+
+	fn looking(&self) -> Direction {
+		self.direction
+	}
+
+	fn detects(&mut self, (_, height): &(Position, Height)) -> bool {
+		let order = self.latest.map(|l| height.cmp(&l)).unwrap_or(Greater);
+
+		match order {
+			Less | Equal => false,
+			Greater => {
+				self.latest = Some(*height);
+
+				true
+			}
+		}
+	}
+}
+
+struct TreeHouse {
+	height: Height,
+	origin: Position,
+	direction: Direction,
+	proceed: bool,
+}
+
+impl TreeHouse {
+	fn new(height: Height, pos: Position, dir: Direction) -> Self {
+		Self {
+			height,
+			origin: pos,
+			direction: dir,
+			proceed: true,
+		}
+	}
+}
+
+impl Observer for TreeHouse {
+	fn location(&self) -> Position {
+		self.origin
+	}
+
+	fn looking(&self) -> Direction {
+		self.direction
+	}
+
+	fn detects(&mut self, (pos, height): &(Position, Height)) -> bool {
+		if pos == &self.origin {
+			return false
+		}
+
+		if !self.proceed {
+			return false
+		}
+
+		if height >= &self.height {
+			self.proceed = false;
+		}
+
+		return true;
+	}
+}
+
+fn parse(input: Input) -> Forest {
+	lines(input)
 		.fold(None, |acc, line| {
 			let row: Vec<_> = line
 				.chars()
@@ -140,13 +286,19 @@ pub fn basic(input: Input) -> String {
 				}
 			}
 		})
-		.unwrap();
+		.unwrap()
+}
+
+pub fn basic(input: Input) -> String {
+	let forest = parse(input);
 
 	forest.visible_from_outside().len().to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	String::from("unimplemented")
+pub fn complex(input: Input) -> String {
+	let forest = parse(input);
+
+	forest.scenic_scores().iter().map(|(_, s)| s).max().unwrap().to_string()
 }
 
 #[cfg(test)]
@@ -173,10 +325,14 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			3
+			30373
+			25512
+			65332
+			33549
+			35390
 		"#
 		);
 
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input), "8")
 	}
 }
