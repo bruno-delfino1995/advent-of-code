@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::{Rc, Weak};
@@ -52,8 +52,7 @@ impl INode {
 		match self {
 			File { .. } => (),
 			Directory { children, .. } => {
-				children
-					.insert(child.borrow().name().to_string(), Rc::clone(child));
+				children.insert(child.borrow().name().to_string(), Rc::clone(child));
 			}
 		}
 	}
@@ -93,13 +92,7 @@ impl INode {
 
 		match self {
 			Directory { name, children, .. } => {
-				writeln!(
-					f,
-					"{}- {} (dir) (child={})",
-					prefix,
-					name,
-					children.len()
-				)?;
+				writeln!(f, "{}- {} (dir) (child={})", prefix, name, children.len())?;
 				children
 					.iter()
 					.try_for_each(|(_, child)| child.borrow().tree(padding + 1, f))
@@ -260,7 +253,8 @@ impl Shell {
 		}
 
 		let entry = self.runtime.cwd().and_then(|cwd| {
-			cwd.borrow().children()
+			cwd.borrow()
+				.children()
 				.and_then(|children| children.get(dir).map(|dir| self.runtime.enter(dir)))
 		});
 

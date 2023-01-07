@@ -1,10 +1,10 @@
 use crate::prelude::*;
 
-pub fn basic(input: Input) -> String {
+pub fn basic(_input: Input) -> String {
 	String::from("unimplemented")
 }
 
-pub fn complex(input: Input) -> String {
+pub fn complex(_input: Input) -> String {
 	String::from("unimplemented")
 }
 
