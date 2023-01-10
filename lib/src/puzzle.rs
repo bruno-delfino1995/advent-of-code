@@ -11,16 +11,16 @@ pub struct Puzzle {
 }
 
 impl Puzzle {
-	pub fn year(&self) -> String {
-		self.year.to_string()
+	pub fn year(&self) -> usize {
+		self.year as usize
 	}
 
-	pub fn day(&self) -> String {
-		self.day.to_string()
+	pub fn day(&self) -> usize {
+		self.day as usize
 	}
 
-	pub fn phase(&self) -> String {
-		self.phase.to_string()
+	pub fn phase(&self) -> usize {
+		self.phase as usize
 	}
 }
 

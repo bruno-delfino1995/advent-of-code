@@ -1,3 +1,4 @@
+mod common;
 mod prelude;
 mod puzzle;
 mod s2022;

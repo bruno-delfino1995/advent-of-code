@@ -2,6 +2,7 @@ use clap::Parser;
 
 use std::fmt::Display;
 use std::fs::File;
+use std::io::BufRead;
 use std::process;
 
 use std::{io::BufReader, path::PathBuf};
@@ -31,24 +32,51 @@ fn main() {
 	let args = Args::parse();
 	let puzzle = args.puzzle.unwrap_or_default();
 
-	let path = {
-		let mut root = PathBuf::from("in");
-		root.push(puzzle.year());
-		root.push(format!("{:0>2}.{}.txt", puzzle.day(), puzzle.phase()));
-
-		root
-	};
-
-	let reader = File::open(path)
-		.map(BufReader::new)
-		.map_err(|_| String::from("Input not found"))
-		.unwrap_or_else(exit);
+	let reader = open_input(&puzzle).unwrap_or_else(exit);
 
 	let output = solutions
 		.run(&puzzle, Box::new(reader))
 		.unwrap_or_else(exit);
 
 	println!("{}", output)
+}
+
+fn open_input(puzzle: &Puzzle) -> Result<Box<dyn BufRead>, String> {
+	let day = puzzle.day();
+	let year = puzzle.year();
+	let phase = puzzle.phase();
+
+	let asked_phase_path = {
+		let mut root = PathBuf::from("in");
+		root.push(year.to_string());
+		root.push(format!("{:0>2}.{}.txt", day, phase));
+
+		root
+	};
+
+	let previous_phase_path = {
+		let mut root = PathBuf::from("in");
+		root.push(year.to_string());
+		root.push(format!("{:0>2}.{}.txt", day, phase.saturating_sub(1)));
+
+		root
+	};
+
+	let day_path = {
+		let mut root = PathBuf::from("in");
+		root.push(year.to_string());
+		root.push(format!("{:0>2}.txt", day));
+
+		root
+	};
+
+	let reader = File::open(asked_phase_path)
+		.or_else(|_| File::open(previous_phase_path))
+		.or_else(|_| File::open(day_path))
+		.map_err(|_| "input not found".to_string())
+		.map(BufReader::new)?;
+
+	Ok(Box::new(reader))
 }
 
 fn exit<T: Display, R>(err: T) -> R {

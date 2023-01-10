@@ -1,80 +1,11 @@
-use std::{cmp::Ordering::*, collections::HashSet, fmt};
+use std::{cmp::Ordering::*, collections::HashSet};
 
+use crate::common::grid::{Axis, Direction, Position};
 use crate::prelude::*;
 use Axis::*;
 use Direction::*;
 
 type Height = usize;
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-enum Axis {
-	X,
-	Y,
-}
-
-impl From<Direction> for Axis {
-	fn from(value: Direction) -> Self {
-		match value {
-			Left | Right => X,
-			Up | Down => Y,
-		}
-	}
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
-struct Position {
-	row: usize,
-	col: usize,
-}
-
-impl Position {
-	fn new(row: usize, col: usize) -> Self {
-		Self { row, col }
-	}
-
-	fn to_linear(self, size: usize) -> usize {
-		let row = self.row * size;
-		let col = self.col;
-
-		row + col
-	}
-
-	fn from_linear(idx: usize, size: usize) -> Self {
-		let row = idx / size;
-		let col = idx - row * size;
-
-		Position { row, col }
-	}
-
-	fn mirror(&self, size: usize, axis: Axis) -> Self {
-		let mirror = |n| (n as isize - (size - 1) as isize).unsigned_abs();
-
-		match axis {
-			X => Position {
-				row: self.row,
-				col: mirror(self.col),
-			},
-			Y => Position {
-				row: mirror(self.row),
-				col: self.col,
-			},
-		}
-	}
-}
-
-impl fmt::Debug for Position {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "({}, {})", self.row, self.col)
-	}
-}
-
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-enum Direction {
-	Up,
-	Right,
-	Down,
-	Left,
-}
 
 #[derive(Debug)]
 struct Forest {
@@ -103,11 +34,14 @@ impl Forest {
 	fn borders(&self) -> Vec<(Position, Direction)> {
 		let top = (0..self.size).map(|col| (Position::new(0, col), Down));
 		let right = (0..self.size).map(|row| (Position::new(row, self.size - 1), Left));
-		let bottom = top.clone().rev().map(|(p, _)| (p.mirror(self.size, Y), Up));
+		let bottom = top
+			.clone()
+			.rev()
+			.map(|(p, _)| (p.mirror(self.size, Row), Up));
 		let left = right
 			.clone()
 			.rev()
-			.map(|(p, _)| (p.mirror(self.size, X), Right));
+			.map(|(p, _)| (p.mirror(self.size, Column), Right));
 
 		top.chain(right).chain(bottom).chain(left).collect()
 	}
@@ -117,10 +51,18 @@ impl Forest {
 		let dir = observer.looking();
 
 		let to_check: Box<dyn Iterator<Item = Position>> = match dir {
-			Up => Box::new((0..=pos.row).rev().map(|row| Position::new(row, pos.col))),
-			Right => Box::new((pos.col..self.size).map(|col| Position::new(pos.row, col))),
-			Down => Box::new((pos.row..self.size).map(|row| Position::new(row, pos.col))),
-			Left => Box::new((0..=pos.col).rev().map(|col| Position::new(pos.row, col))),
+			Up => Box::new(
+				(0..=pos.row())
+					.rev()
+					.map(|row| Position::new(row, pos.col())),
+			),
+			Right => Box::new((pos.col()..self.size).map(|col| Position::new(pos.row(), col))),
+			Down => Box::new((pos.row()..self.size).map(|row| Position::new(row, pos.col()))),
+			Left => Box::new(
+				(0..=pos.col())
+					.rev()
+					.map(|col| Position::new(pos.row(), col)),
+			),
 		};
 
 		to_check
@@ -157,15 +99,14 @@ impl Forest {
 			.map(|(idx, h)| {
 				let pos = Position::from_linear(idx, self.size);
 
-				let score =
-					DIRECTIONS
-						.into_iter()
-						.map(|d| {
-							let mut tree_house = TreeHouse::new(*h, pos, d);
+				let score = DIRECTIONS
+					.into_iter()
+					.map(|d| {
+						let mut tree_house = TreeHouse::new(*h, pos, d);
 
-							self.visible_for(&mut tree_house).len()
-						})
-						.product();
+						self.visible_for(&mut tree_house).len()
+					})
+					.product();
 
 				(pos, score)
 			})
@@ -249,18 +190,18 @@ impl Observer for TreeHouse {
 
 	fn detects(&mut self, (pos, height): &(Position, Height)) -> bool {
 		if pos == &self.origin {
-			return false
+			return false;
 		}
 
 		if !self.proceed {
-			return false
+			return false;
 		}
 
 		if height >= &self.height {
 			self.proceed = false;
 		}
 
-		return true;
+		true
 	}
 }
 
@@ -298,7 +239,13 @@ pub fn basic(input: Input) -> String {
 pub fn complex(input: Input) -> String {
 	let forest = parse(input);
 
-	forest.scenic_scores().iter().map(|(_, s)| s).max().unwrap().to_string()
+	forest
+		.scenic_scores()
+		.iter()
+		.map(|(_, s)| s)
+		.max()
+		.unwrap()
+		.to_string()
 }
 
 #[cfg(test)]

@@ -1,11 +1,11 @@
 use crate::prelude::*;
 
 pub fn basic(_input: Input) -> String {
-	String::from("unimplemented")
+	todo!()
 }
 
 pub fn complex(_input: Input) -> String {
-	String::from("unimplemented")
+	todo!()
 }
 
 #[cfg(test)]

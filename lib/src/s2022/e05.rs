@@ -110,7 +110,7 @@ fn transpose<T>(v: Vec<Vec<Option<T>>>) -> Vec<VecDeque<T>> {
 		.collect()
 }
 
-pub fn basic(input: Input) -> String {
+fn parse(input: Input) -> (Piles, Vec<Command>) {
 	let mut lines = lines(input);
 
 	let crates = (&mut lines)
@@ -121,13 +121,20 @@ pub fn basic(input: Input) -> String {
 				.map(|(_, v)| v)
 		})
 		.collect_vec();
-	let mut piles = Piles(transpose(crates));
+	let piles = Piles(transpose(crates));
 
 	assert!(lines.next().is_some());
 
 	let commands = lines
 		.map(|l| parser::command(&l).ok().map(|(_, c)| c).unwrap())
 		.collect_vec();
+
+	(piles, commands)
+}
+
+pub fn basic(input: Input) -> String {
+	let (mut piles, commands) = parse(input);
+
 	for c in commands {
 		piles.apply(c);
 	}
@@ -136,23 +143,8 @@ pub fn basic(input: Input) -> String {
 }
 
 pub fn complex(input: Input) -> String {
-	let mut lines = lines(input);
+	let (mut piles, commands) = parse(input);
 
-	let crates = (&mut lines)
-		.map_while(|l| {
-			all_consuming(parser::ship)(&l)
-				.finish()
-				.ok()
-				.map(|(_, v)| v)
-		})
-		.collect_vec();
-	let mut piles = Piles(transpose(crates));
-
-	assert!(lines.next().is_some());
-
-	let commands = lines
-		.map(|l| parser::command(&l).ok().map(|(_, c)| c).unwrap())
-		.collect_vec();
 	for c in commands {
 		piles.apply_retain(c);
 	}
@@ -169,8 +161,8 @@ mod test {
 	fn first_example() {
 		let input = input!(
 			r#"
-			    [D]    
-			[N] [C]    
+			    [D]
+			[N] [C]
 			[Z] [M] [P]
 			 1   2   3
 
@@ -188,8 +180,8 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			    [D]    
-			[N] [C]    
+			    [D]
+			[N] [C]
 			[Z] [M] [P]
 			 1   2   3
 
