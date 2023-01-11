@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::prelude::*;
 
 enum Instruction {
@@ -23,10 +25,6 @@ impl Register {
 			}
 		}
 	}
-
-	fn close(self) -> Vec<isize> {
-		vec![self.0]
-	}
 }
 
 fn parse(input: &str) -> Instruction {
@@ -34,7 +32,11 @@ fn parse(input: &str) -> Instruction {
 		return Instruction::Noop;
 	}
 
-	let amount = input.split(" ").last().and_then(|n| n.parse::<isize>().ok()).unwrap();
+	let amount = input
+		.split(' ')
+		.last()
+		.and_then(|n| n.parse::<isize>().ok())
+		.unwrap();
 	Instruction::Add(amount)
 }
 
@@ -42,50 +44,86 @@ pub fn basic(input: Input) -> String {
 	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
 	let reg = Register::new();
 
-	let (iter, reg) =
-		lines(input).map(|line| parse(&line)).fold((cycles, reg), |(cycles, reg), ins| {
-			let (values, reg) = reg.read(ins);
-			let iter = Box::new(cycles.chain(values.into_iter()));
+	let (iter, _) =
+		lines(input)
+			.map(|line| parse(&line))
+			.fold((cycles, reg), |(cycles, reg), ins| {
+				let (values, reg) = reg.read(ins);
+				let iter = Box::new(cycles.chain(values.into_iter()));
 
-			(iter, reg)
-		});
+				(iter, reg)
+			});
 
-	let mut iter = iter.chain(reg.close().into_iter()).enumerate().map(|(idx, value)| (idx + 1, value));
+	let mut iter = iter.enumerate().map(|(idx, value)| (idx + 1, value));
 	let mut checks = std::iter::successors(Some(20), |n| Some(n + 40));
 	let mut to_check = checks.next();
-	let zipped =
-		std::iter::from_fn(|| {
-			let check = to_check.unwrap();
-			match iter.next() {
-				None => None,
-				Some((idx, value)) if idx == check => {
-					to_check = checks.next();
+	let zipped = std::iter::from_fn(|| {
+		let check = to_check.unwrap();
+		match iter.next() {
+			None => None,
+			Some((idx, value)) if idx == check => {
+				to_check = checks.next();
 
-					Some((idx, value, true))
-				},
-				Some((idx, value)) => Some((idx, value, false)),
+				Some((idx, value, true))
 			}
-		});
+			Some((idx, value)) => Some((idx, value, false)),
+		}
+	});
 
-	zipped.filter(|(_, _, c)| *c)
+	zipped
+		.filter(|(_, _, c)| *c)
 		.map(|(idx, v, _)| v * (idx as isize))
 		.take(6)
 		.sum::<isize>()
 		.to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	todo!()
+pub fn complex(input: Input) -> String {
+	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
+	let reg = Register::new();
+
+	let (iter, _) =
+		lines(input)
+			.map(|line| parse(&line))
+			.fold((cycles, reg), |(cycles, reg), ins| {
+				let (values, reg) = reg.read(ins);
+				let iter = Box::new(cycles.chain(values.into_iter()));
+
+				(iter, reg)
+			});
+
+	let columns = 40;
+	iter.enumerate()
+		.chunks(columns)
+		.into_iter()
+		.map(|iter| {
+			let line = String::with_capacity(columns);
+
+			iter.fold(line, |mut line, (cycle, x)| {
+				let cursor = cycle % columns;
+				let sprite = [x - 1, x, x + 1];
+
+				if sprite.contains(&(cursor as isize)) {
+					line.push('#');
+				} else {
+					line.push('.');
+				}
+
+				line
+			})
+		})
+		.join("\n")
 }
 
 #[cfg(test)]
 mod test {
+	use indoc::indoc;
+
 	use super::*;
 	use crate::input;
 
-	#[test]
-	fn first_example() {
-		let input = input!(
+	fn input() -> Box<dyn BufRead> {
+		input!(
 			r#"
 			addx 15
 			addx -11
@@ -234,19 +272,25 @@ mod test {
 			noop
 			noop
 		"#
-		);
+		)
+	}
 
-		assert_eq!(basic(input), "13140")
+	#[test]
+	fn first_example() {
+		assert_eq!(basic(input()), "13140")
 	}
 
 	#[test]
 	fn second_example() {
-		let input = input!(
-			r#"
-			3
-		"#
-		);
+		let output = indoc! {"
+			##..##..##..##..##..##..##..##..##..##..
+			###...###...###...###...###...###...###.
+			####....####....####....####....####....
+			#####.....#####.....#####.....#####.....
+			######......######......######......####
+			#######.......#######.......#######....."
+		};
 
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input()), output)
 	}
 }
