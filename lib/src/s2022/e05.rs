@@ -161,8 +161,8 @@ mod test {
 	fn first_example() {
 		let input = input!(
 			r#"
-			    [D]
-			[N] [C]
+			    [D]    
+			[N] [C]    
 			[Z] [M] [P]
 			 1   2   3
 
@@ -180,8 +180,8 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			    [D]
-			[N] [C]
+			    [D]    
+			[N] [C]    
 			[Z] [M] [P]
 			 1   2   3
 
