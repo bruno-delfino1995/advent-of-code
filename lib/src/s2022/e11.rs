@@ -41,22 +41,38 @@ struct Monkey {
 	divisor: isize,
 	on_true: usize,
 	on_false: usize,
+	too_worried: bool,
 }
 
 impl Monkey {
-	fn throw(&mut self) -> Option<(usize, isize)> {
+	fn throw(&mut self, divisors_product: isize) -> Option<(usize, isize)> {
 		let item = self.items.pop_front();
 
-		item.map(|worry| self.operation.call(worry) / 3)
-			.map(|worry| {
-				let divisible = worry % self.divisor == 0;
+		item.map(|mut worry| {
+			// As we only test divisibility, reducing a number to the modulus of a divisor's multiple
+			// guarantees that the result will be divisible by the original divisor. If the monkeys
+			// have the following divisors [3, 2, 5, 6] (product = 180) and the first monkey's current
+			// item is 8675, the check will still be false whether we the raw number against or if we
+			// use the modulus of it against 180 (8675 % 180 => 35 % 3 = 2 <=> 8675 % 3 = 2)
+			worry %= divisors_product;
 
-				if divisible {
-					(self.on_true, worry)
-				} else {
-					(self.on_false, worry)
-				}
-			})
+			let new = self.operation.call(worry);
+
+			if self.too_worried {
+				new
+			} else {
+				new / 3
+			}
+		})
+		.map(|worry| {
+			let divisible = worry % self.divisor == 0;
+
+			if divisible {
+				(self.on_true, worry)
+			} else {
+				(self.on_false, worry)
+			}
+		})
 	}
 
 	fn receive(&mut self, item: isize) {
@@ -118,7 +134,7 @@ mod parser {
 		preceded(tag("If false: throw to monkey "), usize)(s)
 	}
 
-	fn parse_monkey(s: &str) -> IResult<&str, Monkey> {
+	fn parse_monkey(s: &str, too_worried: bool) -> IResult<&str, Monkey> {
 		let (rem, (_, _)) = tuple((parse_index, newline))(s)?;
 		let (rem, items) = delimited(space1, parse_items, newline)(rem)?;
 		let (rem, operation) = delimited(space1, parse_operation, newline)(rem)?;
@@ -134,32 +150,38 @@ mod parser {
 				divisor,
 				on_true,
 				on_false,
+				too_worried,
 			},
 		))
 	}
 
-	pub(super) fn monkeys(s: &str) -> IResult<&str, Vec<Monkey>> {
-		separated_list1(tag("\n"), parse_monkey)(s)
+	pub(super) fn monkeys(s: &str, too_worried: bool) -> IResult<&str, Vec<Monkey>> {
+		separated_list1(tag("\n"), |s| parse_monkey(s, too_worried))(s)
 	}
 }
 
 #[derive(Debug)]
 struct KeepAway {
 	monkeys: Vec<RefCell<Monkey>>,
+	divisors_product: isize,
 }
 
 impl KeepAway {
 	fn new(monkeys: Vec<Monkey>) -> Self {
-		let monkeys = monkeys.into_iter().map(RefCell::new).collect();
+		let monkeys: Vec<RefCell<Monkey>> = monkeys.into_iter().map(RefCell::new).collect();
+		let divisors_product = monkeys.iter().map(|m| m.borrow().divisor).product();
 
-		Self { monkeys }
+		Self {
+			monkeys,
+			divisors_product,
+		}
 	}
 
 	fn round(&mut self) -> Inspections {
 		let mut inspections = Inspections::new(self.monkeys.len());
 
 		for (i, monkey) in self.monkeys.iter().enumerate() {
-			while let Some((receiver, worry)) = monkey.borrow_mut().throw() {
+			while let Some((receiver, worry)) = monkey.borrow_mut().throw(self.divisors_product) {
 				inspections.record(i);
 
 				self.monkeys
@@ -202,7 +224,7 @@ impl Inspections {
 	}
 }
 
-pub fn basic(mut input: Input) -> String {
+fn run(mut input: Input, rounds: usize, too_worried: bool) -> Inspections {
 	let contents = {
 		let mut buf = String::new();
 		input.read_to_string(&mut buf).unwrap();
@@ -210,18 +232,21 @@ pub fn basic(mut input: Input) -> String {
 		buf
 	};
 
-	let monkeys = all_consuming(parser::monkeys)(&contents)
+	let monkeys = all_consuming(|s| parser::monkeys(s, too_worried))(&contents)
 		.finish()
 		.unwrap()
 		.1;
 
 	let mut game = KeepAway::new(monkeys);
-	let mut inspections = std::iter::repeat(0)
-		.take(20)
+	std::iter::repeat(0)
+		.take(rounds)
 		.map(|_| game.round())
 		.reduce(|acc, el| acc.merge(el))
 		.unwrap()
-		.take();
+}
+
+pub fn basic(input: Input) -> String {
+	let mut inspections = run(input, 20, false).take();
 	inspections.sort_by(|a, b| b.cmp(a));
 
 	let res = inspections[0] * inspections[1];
@@ -229,8 +254,13 @@ pub fn basic(mut input: Input) -> String {
 	res.to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	todo!()
+pub fn complex(input: Input) -> String {
+	let mut inspections = run(input, 10_000, true).take();
+	inspections.sort_by(|a, b| b.cmp(a));
+
+	let res = inspections[0] * inspections[1];
+
+	res.to_string()
 }
 
 #[cfg(test)]
@@ -238,9 +268,8 @@ mod test {
 	use super::*;
 	use crate::input;
 
-	#[test]
-	fn first_example() {
-		let input = input!(
+	fn input() -> Input {
+		input!(
 			r#"
 			Monkey 0:
 				Starting items: 79, 98
@@ -270,19 +299,16 @@ mod test {
 					If true: throw to monkey 0
 					If false: throw to monkey 1
 		"#
-		);
+		)
+	}
 
-		assert_eq!(basic(input), "10605")
+	#[test]
+	fn first_example() {
+		assert_eq!(basic(input()), "10605")
 	}
 
 	#[test]
 	fn second_example() {
-		let input = input!(
-			r#"
-			3
-		"#
-		);
-
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input()), "2713310158")
 	}
 }
