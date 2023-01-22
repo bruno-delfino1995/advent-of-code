@@ -3,10 +3,18 @@ use std::{collections::HashMap, fmt};
 use itertools::Itertools;
 
 use crate::{
-	common::grid::{Area, Coord, DIRECTIONS},
+	common::grid::{Area, Coord, Direction},
 	prelude::*,
 };
+use Target::*;
 
+#[derive(Clone, Copy)]
+enum Target {
+	Peak,
+	Valley,
+}
+
+#[derive(Clone, Copy)]
 struct Elevation(u8);
 
 impl From<char> for Elevation {
@@ -62,18 +70,25 @@ impl fmt::Display for Heightmap {
 }
 
 impl Heightmap {
-	fn neighbors(&self, coord: Coord) -> Vec<Coord> {
+	fn at(&self, coord: Coord) -> Elevation {
 		let idx = coord.to_linear(self.area);
-		let height = &self.heights[idx];
+		self.heights[idx]
+	}
 
-		DIRECTIONS
+	fn neighbors(&self, coord: Coord, target: Target) -> Vec<Coord> {
+		let height = self.at(coord);
+
+		Direction::all()
 			.into_iter()
 			.filter_map(|d| coord.walk(self.area, d))
 			.filter(|c| {
 				let idx = c.to_linear(self.area);
-				let other = &self.heights[idx];
+				let other = self.heights[idx];
 
-				height.walkable(other)
+				match target {
+					Peak => height.walkable(&other),
+					Valley => other.walkable(&height),
+				}
 			})
 			.collect()
 	}
@@ -92,42 +107,59 @@ struct Climbers {
 impl Climbers {
 	fn new(map: Heightmap) -> Self {
 		let len = map.len();
-		let mut checking = HashMap::with_capacity(len);
-		checking.insert(map.source, 0);
 
 		Self {
 			map,
-			checking,
+			checking: HashMap::with_capacity(len),
 			checked: HashMap::with_capacity(len),
 		}
 	}
 
-	fn journey(mut self) -> usize {
-		loop {
-			if let Some(steps) = self.checked.get(&self.map.target) {
-				return *steps;
-			}
+	fn uphill(mut self) -> usize {
+		self.checking.insert(self.map.source, 0);
+		let target = self.map.target;
 
-			self = self.climb();
+		loop {
+			if let Some(coord) = self.walk(Peak, |(coord, _)| coord == target) {
+				return *self.checked.get(&coord).unwrap();
+			}
 		}
 	}
 
-	fn climb(mut self) -> Self {
+	fn downhill(mut self) -> usize {
+		self.checking.insert(self.map.target, 0);
+
+		loop {
+			if let Some(coord) = self.walk(Valley, |(_, elevation)| elevation.as_char() == 'a') {
+				return *self.checked.get(&coord).unwrap();
+			}
+		}
+	}
+
+	fn walk<F: Fn((Coord, Elevation)) -> bool>(
+		&mut self,
+		target: Target,
+		is_destination: F,
+	) -> Option<Coord> {
 		let mut next = HashMap::with_capacity(self.checking.len() * 4);
 
-		for (check, steps) in self.checking {
-			for neighbor in self.map.neighbors(check) {
+		for (check, steps) in self.checking.iter() {
+			for neighbor in self.map.neighbors(*check, target) {
 				if self.checked.contains_key(&neighbor) {
 					continue;
 				}
 
 				self.checked.insert(neighbor, steps + 1);
 				next.insert(neighbor, steps + 1);
+
+				if is_destination((neighbor, self.map.at(neighbor))) {
+					return Some(neighbor);
+				}
 			}
 		}
 
 		self.checking = next;
-		self
+		None
 	}
 }
 
@@ -155,7 +187,7 @@ fn parse(input: Input) -> Heightmap {
 				}
 				letter => {
 					row.push(Elevation::from(letter));
-				},
+				}
 			}
 		}
 
@@ -175,11 +207,14 @@ pub fn basic(input: Input) -> String {
 	let map = parse(input);
 	let climbers = Climbers::new(map);
 
-	climbers.journey().to_string()
+	climbers.uphill().to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	todo!()
+pub fn complex(input: Input) -> String {
+	let map = parse(input);
+	let climbers = Climbers::new(map);
+
+	climbers.downhill().to_string()
 }
 
 #[cfg(test)]
@@ -206,10 +241,14 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			3
+			Sabqponm
+			abcryxxl
+			accszExk
+			acctuvwj
+			abdefghi
 		"#
 		);
 
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input), "29")
 	}
 }

@@ -21,8 +21,6 @@ impl From<Direction> for Axis {
 	}
 }
 
-pub const DIRECTIONS: [Direction; 4] = [Up, Right, Down, Left];
-
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Direction {
 	Up,
@@ -41,6 +39,12 @@ impl fmt::Debug for Direction {
 		};
 
 		write!(f, "{}", as_str)
+	}
+}
+
+impl Direction {
+	pub const fn all() -> [Direction; 4] {
+		[Up, Right, Down, Left]
 	}
 }
 
