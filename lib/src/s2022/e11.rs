@@ -90,7 +90,7 @@ mod parser {
 		character::complete::{newline, one_of, space1},
 		combinator::map,
 		multi::{separated_list0, separated_list1},
-		sequence::{delimited, preceded, tuple},
+		sequence::{delimited, preceded, terminated, tuple},
 		IResult,
 	};
 
@@ -135,7 +135,7 @@ mod parser {
 	}
 
 	fn parse_monkey(s: &str, too_worried: bool) -> IResult<&str, Monkey> {
-		let (rem, (_, _)) = tuple((parse_index, newline))(s)?;
+		let (rem, _) = terminated(parse_index, newline)(s)?;
 		let (rem, items) = delimited(space1, parse_items, newline)(rem)?;
 		let (rem, operation) = delimited(space1, parse_operation, newline)(rem)?;
 		let (rem, divisor) = delimited(space1, parse_divisor, newline)(rem)?;
@@ -156,7 +156,7 @@ mod parser {
 	}
 
 	pub(super) fn monkeys(s: &str, too_worried: bool) -> IResult<&str, Vec<Monkey>> {
-		separated_list1(tag("\n"), |s| parse_monkey(s, too_worried))(s)
+		separated_list1(newline, |s| parse_monkey(s, too_worried))(s)
 	}
 }
 
