@@ -1,6 +1,6 @@
 use std::{cmp::Ordering::*, collections::HashSet};
 
-use crate::common::grid::{Axis, Direction, Position};
+use crate::common::grid::{Axis, Coord, Direction};
 use crate::prelude::*;
 use Axis::*;
 use Direction::*;
@@ -25,44 +25,36 @@ impl Forest {
 		self.grid.extend(row)
 	}
 
-	fn at(&self, pos: &Position) -> Option<Height> {
-		let idx = pos.to_linear(self.size);
+	fn at(&self, pos: &Coord) -> Option<Height> {
+		let idx = pos.to_linear(self.size.into());
 
 		self.grid.get(idx).copied()
 	}
 
-	fn borders(&self) -> Vec<(Position, Direction)> {
-		let top = (0..self.size).map(|col| (Position::new(0, col), Down));
-		let right = (0..self.size).map(|row| (Position::new(row, self.size - 1), Left));
+	fn borders(&self) -> Vec<(Coord, Direction)> {
+		let top = (0..self.size).map(|col| (Coord::new(0, col), Down));
+		let right = (0..self.size).map(|row| (Coord::new(row, self.size - 1), Left));
 		let bottom = top
 			.clone()
 			.rev()
-			.map(|(p, _)| (p.mirror(self.size, Row), Up));
+			.map(|(p, _)| (p.mirror(self.size.into(), Row), Up));
 		let left = right
 			.clone()
 			.rev()
-			.map(|(p, _)| (p.mirror(self.size, Column), Right));
+			.map(|(p, _)| (p.mirror(self.size.into(), Column), Right));
 
 		top.chain(right).chain(bottom).chain(left).collect()
 	}
 
-	fn visible_for(&self, observer: &mut dyn Observer) -> Vec<(Position, Height)> {
+	fn visible_for(&self, observer: &mut dyn Observer) -> Vec<(Coord, Height)> {
 		let pos = observer.location();
 		let dir = observer.looking();
 
-		let to_check: Box<dyn Iterator<Item = Position>> = match dir {
-			Up => Box::new(
-				(0..=pos.row())
-					.rev()
-					.map(|row| Position::new(row, pos.col())),
-			),
-			Right => Box::new((pos.col()..self.size).map(|col| Position::new(pos.row(), col))),
-			Down => Box::new((pos.row()..self.size).map(|row| Position::new(row, pos.col()))),
-			Left => Box::new(
-				(0..=pos.col())
-					.rev()
-					.map(|col| Position::new(pos.row(), col)),
-			),
+		let to_check: Box<dyn Iterator<Item = Coord>> = match dir {
+			Up => Box::new((0..=pos.row()).rev().map(|row| Coord::new(row, pos.col()))),
+			Right => Box::new((pos.col()..self.size).map(|col| Coord::new(pos.row(), col))),
+			Down => Box::new((pos.row()..self.size).map(|row| Coord::new(row, pos.col()))),
+			Left => Box::new((0..=pos.col()).rev().map(|col| Coord::new(pos.row(), col))),
 		};
 
 		to_check
@@ -78,7 +70,7 @@ impl Forest {
 			.collect()
 	}
 
-	fn visible_from_outside(&self) -> HashSet<Position> {
+	fn visible_from_outside(&self) -> HashSet<Coord> {
 		self.borders()
 			.into_iter()
 			.flat_map(|(origin, direction)| {
@@ -90,14 +82,14 @@ impl Forest {
 			.collect()
 	}
 
-	fn scenic_scores(&self) -> Vec<(Position, usize)> {
+	fn scenic_scores(&self) -> Vec<(Coord, usize)> {
 		const DIRECTIONS: [Direction; 4] = [Up, Right, Down, Left];
 
 		self.grid
 			.iter()
 			.enumerate()
 			.map(|(idx, h)| {
-				let pos = Position::from_linear(idx, self.size);
+				let pos = Coord::from_linear(idx, self.size.into());
 
 				let score = DIRECTIONS
 					.into_iter()
@@ -115,21 +107,21 @@ impl Forest {
 }
 
 trait Observer {
-	fn location(&self) -> Position;
+	fn location(&self) -> Coord;
 
 	fn looking(&self) -> Direction;
 
-	fn detects(&mut self, tree: &(Position, Height)) -> bool;
+	fn detects(&mut self, tree: &(Coord, Height)) -> bool;
 }
 
 struct Elf {
-	origin: Position,
+	origin: Coord,
 	direction: Direction,
 	latest: Option<Height>,
 }
 
 impl Elf {
-	fn new(pos: Position, dir: Direction) -> Self {
+	fn new(pos: Coord, dir: Direction) -> Self {
 		Self {
 			origin: pos,
 			direction: dir,
@@ -139,7 +131,7 @@ impl Elf {
 }
 
 impl Observer for Elf {
-	fn location(&self) -> Position {
+	fn location(&self) -> Coord {
 		self.origin
 	}
 
@@ -147,7 +139,7 @@ impl Observer for Elf {
 		self.direction
 	}
 
-	fn detects(&mut self, (_, height): &(Position, Height)) -> bool {
+	fn detects(&mut self, (_, height): &(Coord, Height)) -> bool {
 		let order = self.latest.map(|l| height.cmp(&l)).unwrap_or(Greater);
 
 		match order {
@@ -163,13 +155,13 @@ impl Observer for Elf {
 
 struct TreeHouse {
 	height: Height,
-	origin: Position,
+	origin: Coord,
 	direction: Direction,
 	proceed: bool,
 }
 
 impl TreeHouse {
-	fn new(height: Height, pos: Position, dir: Direction) -> Self {
+	fn new(height: Height, pos: Coord, dir: Direction) -> Self {
 		Self {
 			height,
 			origin: pos,
@@ -180,7 +172,7 @@ impl TreeHouse {
 }
 
 impl Observer for TreeHouse {
-	fn location(&self) -> Position {
+	fn location(&self) -> Coord {
 		self.origin
 	}
 
@@ -188,7 +180,7 @@ impl Observer for TreeHouse {
 		self.direction
 	}
 
-	fn detects(&mut self, (pos, height): &(Position, Height)) -> bool {
+	fn detects(&mut self, (pos, height): &(Coord, Height)) -> bool {
 		if pos == &self.origin {
 			return false;
 		}
