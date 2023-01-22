@@ -5,10 +5,11 @@ edition.workspace = true
 
 [dependencies]
 chrono = "0.4.23"
-regex = "1.7.0"
-nom = "7.1.1"
 itertools = "0.10.5"
 lazy_static = "1.4.0"
+linkme = "0.3"
+nom = "7.1.1"
+regex = "1.7.0"
 
 [dev-dependencies]
 indoc = "1.0.8"

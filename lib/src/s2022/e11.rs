@@ -1,6 +1,5 @@
-use std::{cell::RefCell, collections::VecDeque};
-
 use nom::{combinator::all_consuming, Finish};
+use std::{cell::RefCell, collections::VecDeque};
 
 use crate::prelude::*;
 
@@ -245,23 +244,23 @@ fn run(mut input: Input, rounds: usize, too_worried: bool) -> Inspections {
 		.unwrap()
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.11.1", basic(input) {
 	let mut inspections = run(input, 20, false).take();
 	inspections.sort_by(|a, b| b.cmp(a));
 
 	let res = inspections[0] * inspections[1];
 
 	res.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.11.2", complex(input) {
 	let mut inspections = run(input, 10_000, true).take();
 	inspections.sort_by(|a, b| b.cmp(a));
 
 	let res = inspections[0] * inspections[1];
 
 	res.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -304,11 +303,11 @@ mod test {
 
 	#[test]
 	fn first_example() {
-		assert_eq!(basic(input()), "10605")
+		assert_eq!(basic::solution(input()), "10605")
 	}
 
 	#[test]
 	fn second_example() {
-		assert_eq!(complex(input()), "2713310158")
+		assert_eq!(complex::solution(input()), "2713310158")
 	}
 }

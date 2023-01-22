@@ -296,7 +296,7 @@ impl Shell {
 	}
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.7.1", basic(input) {
 	let shell = lines(input).fold(Shell::new(), |shell, line| shell.parse(&line));
 
 	let root = shell.close().root().unwrap();
@@ -308,9 +308,9 @@ pub fn basic(input: Input) -> String {
 		.filter(|&s| s < 100000)
 		.sum::<usize>()
 		.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.7.2", complex(input) {
 	const FS_SIZE: usize = 70000000;
 	const UPDATE_SIZE: usize = 30000000;
 
@@ -327,7 +327,7 @@ pub fn complex(input: Input) -> String {
 		.min()
 		.unwrap_or_default()
 		.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -364,7 +364,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "95437")
+		assert_eq!(basic::solution(input), "95437")
 	}
 
 	#[test]
@@ -397,6 +397,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "24933642")
+		assert_eq!(complex::solution(input), "24933642")
 	}
 }

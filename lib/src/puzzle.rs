@@ -53,7 +53,14 @@ impl From<DateTime<Local>> for Puzzle {
 
 impl From<&'static str> for Puzzle {
 	fn from(value: &'static str) -> Self {
-		Self::from_str(value).expect("invalid puzzle spec")
+		match value {
+			"0.0.0" => Self {
+				year: 0,
+				day: 0,
+				phase: 0,
+			},
+			other => Self::from_str(other).expect("invalid puzzle spec"),
+		}
 	}
 }
 

@@ -147,20 +147,14 @@ mod parser {
 	}
 }
 
-fn parse(mut input: Input) -> Vec<Pair> {
-	let contents = {
-		let mut buf = String::new();
-		input.read_to_string(&mut buf).unwrap();
+fn parse(input: Input) -> Vec<Pair> {
+	let contents = all(input);
+	let parsed = all_consuming(parser::pairs)(&contents).finish().ok();
 
-		buf
-	};
-
-	let pairs = all_consuming(parser::pairs)(&contents).finish().unwrap().1;
-
-	pairs
+	parsed.unwrap().1
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.13.1", basic(input) {
 	let pairs = parse(input);
 
 	pairs
@@ -170,9 +164,9 @@ pub fn basic(input: Input) -> String {
 		.filter_map(|(i, p)| if p { Some(i + 1) } else { None })
 		.sum::<usize>()
 		.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.13.2", complex(input) {
 	let left = Packet(vec![Data::List(vec![Data::Number(2)])]);
 	let right = Packet(vec![Data::List(vec![Data::Number(6)])]);
 	let delimiters = Pair(left.clone(), right.clone());
@@ -189,7 +183,7 @@ pub fn complex(input: Input) -> String {
 	let key = (first + 1) * (second + 1);
 
 	key.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -228,11 +222,11 @@ mod test {
 
 	#[test]
 	fn first_example() {
-		assert_eq!(basic(input()), "13")
+		assert_eq!(basic::solution(input()), "13")
 	}
 
 	#[test]
 	fn second_example() {
-		assert_eq!(complex(input()), "140")
+		assert_eq!(complex::solution(input()), "140")
 	}
 }

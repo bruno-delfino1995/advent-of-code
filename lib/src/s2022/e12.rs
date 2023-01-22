@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fmt};
-
 use itertools::Itertools;
+use std::{collections::HashMap, fmt};
 
 use crate::{
 	common::grid::{Area, Coord, Direction},
@@ -203,19 +202,19 @@ fn parse(input: Input) -> Heightmap {
 	}
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.12.1", basic(input) {
 	let map = parse(input);
 	let climbers = Climbers::new(map);
 
 	climbers.uphill().to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.12.2", complex(input) {
 	let map = parse(input);
 	let climbers = Climbers::new(map);
 
 	climbers.downhill().to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -234,7 +233,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "31")
+		assert_eq!(basic::solution(input), "31")
 	}
 
 	#[test]
@@ -249,6 +248,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "29")
+		assert_eq!(complex::solution(input), "29")
 	}
 }

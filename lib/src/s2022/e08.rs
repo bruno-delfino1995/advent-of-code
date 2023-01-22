@@ -222,13 +222,13 @@ fn parse(input: Input) -> Forest {
 		.unwrap()
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.8.1", basic(input) {
 	let forest = parse(input);
 
 	forest.visible_from_outside().len().to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.8.2", complex(input) {
 	let forest = parse(input);
 
 	forest
@@ -238,7 +238,7 @@ pub fn complex(input: Input) -> String {
 		.max()
 		.unwrap()
 		.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -257,7 +257,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "21")
+		assert_eq!(basic::solution(input), "21")
 	}
 
 	#[test]
@@ -272,6 +272,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "8")
+		assert_eq!(complex::solution(input), "8")
 	}
 }

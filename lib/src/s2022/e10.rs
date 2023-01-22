@@ -40,7 +40,7 @@ fn parse(input: &str) -> Instruction {
 	Instruction::Add(amount)
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.10.1", basic(input) {
 	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
 	let reg = Register::new();
 
@@ -76,9 +76,9 @@ pub fn basic(input: Input) -> String {
 		.take(6)
 		.sum::<isize>()
 		.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.10.2", complex(input) {
 	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
 	let reg = Register::new();
 
@@ -113,7 +113,7 @@ pub fn complex(input: Input) -> String {
 			})
 		})
 		.join("\n")
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -277,7 +277,7 @@ mod test {
 
 	#[test]
 	fn first_example() {
-		assert_eq!(basic(input()), "13140")
+		assert_eq!(basic::solution(input()), "13140")
 	}
 
 	#[test]
@@ -291,6 +291,6 @@ mod test {
 			#######.......#######.......#######....."
 		};
 
-		assert_eq!(complex(input()), output)
+		assert_eq!(complex::solution(input()), output)
 	}
 }

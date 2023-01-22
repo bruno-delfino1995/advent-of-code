@@ -174,7 +174,7 @@ mod parser {
 	}
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.2.1", basic(input) {
 	lines(input)
 		.map(|line| {
 			let (_, round) = parser::plain(&line).expect("invalid round");
@@ -183,9 +183,9 @@ pub fn basic(input: Input) -> String {
 		})
 		.sum::<usize>()
 		.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.2.2", complex(input) {
 	lines(input)
 		.map(|line| {
 			let (_, round) = parser::strategy(&line).expect("invalid round");
@@ -194,7 +194,7 @@ pub fn complex(input: Input) -> String {
 		})
 		.sum::<usize>()
 		.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -211,7 +211,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "15");
+		assert_eq!(basic::solution(input), "15");
 	}
 
 	#[test]
@@ -224,6 +224,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "12");
+		assert_eq!(complex::solution(input), "12");
 	}
 }

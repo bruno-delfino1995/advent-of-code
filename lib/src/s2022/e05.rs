@@ -1,7 +1,6 @@
-use std::collections::VecDeque;
-
 use itertools::Itertools;
 use nom::{combinator::all_consuming, Finish};
+use std::collections::VecDeque;
 
 use crate::prelude::*;
 
@@ -132,7 +131,7 @@ fn parse(input: Input) -> (Piles, Vec<Command>) {
 	(piles, commands)
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.5.1", basic(input) {
 	let (mut piles, commands) = parse(input);
 
 	for c in commands {
@@ -140,9 +139,9 @@ pub fn basic(input: Input) -> String {
 	}
 
 	piles.heads().into_iter().collect()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.5.2", complex(input) {
 	let (mut piles, commands) = parse(input);
 
 	for c in commands {
@@ -150,7 +149,7 @@ pub fn complex(input: Input) -> String {
 	}
 
 	piles.heads().into_iter().collect()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -173,7 +172,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "CMZ");
+		assert_eq!(basic::solution(input), "CMZ");
 	}
 
 	#[test]
@@ -192,6 +191,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "MCD");
+		assert_eq!(complex::solution(input), "MCD");
 	}
 }

@@ -1,6 +1,7 @@
 use std::collections::BinaryHeap;
 
 use crate::prelude::*;
+use crate::solution;
 
 fn parse(input: Input) -> BinaryHeap<usize> {
 	let (calories, mut elves) = lines(input).fold(
@@ -19,21 +20,21 @@ fn parse(input: Input) -> BinaryHeap<usize> {
 	elves
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.1.1", basic(input) {
 	let mut elves = parse(input);
 
 	let max: usize = elves.pop().unwrap();
 
 	max.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.1.2", complex(input) {
 	let elves = parse(input).into_sorted_vec();
 
 	let max: usize = elves.into_iter().rev().take(3).sum();
 
 	max.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -61,7 +62,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "24000");
+		assert_eq!(basic::solution(input), "24000");
 	}
 
 	#[test]
@@ -85,6 +86,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "45000");
+		assert_eq!(complex::solution(input), "45000");
 	}
 }

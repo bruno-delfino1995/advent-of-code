@@ -1,7 +1,6 @@
+use nom::{combinator::all_consuming, Finish};
 use std::collections::HashSet;
 use std::fmt;
-
-use nom::{combinator::all_consuming, Finish};
 
 use crate::common::plane::{Direction, Motion, Point};
 use crate::prelude::*;
@@ -159,7 +158,7 @@ fn parse(input: Input) -> Box<dyn Iterator<Item = Direction>> {
 	Box::new(iter)
 }
 
-fn solution(input: Input, len: usize) -> String {
+fn solve(input: Input, len: usize) -> String {
 	let rope = Rope::new(len);
 	let points = {
 		let mut set = HashSet::new();
@@ -180,13 +179,13 @@ fn solution(input: Input, len: usize) -> String {
 	points.len().to_string()
 }
 
-pub fn basic(input: Input) -> String {
-	solution(input, 2)
-}
+solution!("2022.9.1", basic(input) {
+	solve(input, 2)
+});
 
-pub fn complex(input: Input) -> String {
-	solution(input, 10)
-}
+solution!("2022.9.2", complex(input) {
+	solve(input, 10)
+});
 
 #[cfg(test)]
 mod test {
@@ -208,7 +207,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "13")
+		assert_eq!(basic::solution(input), "13")
 	}
 
 	#[test]
@@ -226,6 +225,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "36")
+		assert_eq!(complex::solution(input), "36")
 	}
 }

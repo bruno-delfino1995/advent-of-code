@@ -74,21 +74,21 @@ fn marker(message: &str, size: usize) -> usize {
 		.into_inner()
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.6.1", basic(input) {
 	let message: String = lines(input).collect();
 
 	let start_at = marker(&message, 4) + 1;
 
 	start_at.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.6.2", complex(input) {
 	let message: String = lines(input).collect();
 
 	let start_at = marker(&message, 14) + 1;
 
 	start_at.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -106,7 +106,7 @@ mod test {
 		];
 
 		for (input, result) in cases {
-			assert_eq!(basic(input), result)
+			assert_eq!(basic::solution(input), result)
 		}
 	}
 
@@ -121,7 +121,7 @@ mod test {
 		];
 
 		for (input, result) in cases {
-			assert_eq!(complex(input), result)
+			assert_eq!(complex::solution(input), result)
 		}
 	}
 }

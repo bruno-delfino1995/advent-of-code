@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-use std::{ops::RangeInclusive, str::FromStr};
-
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::collections::HashSet;
+use std::{ops::RangeInclusive, str::FromStr};
 
 use crate::prelude::*;
 
@@ -42,7 +41,7 @@ impl FromStr for Assignment {
 	}
 }
 
-pub fn basic(input: Input) -> String {
+solution!("2022.4.1", basic(input) {
 	lines(input)
 		.map(|line| {
 			let (first, second) = line
@@ -57,9 +56,9 @@ pub fn basic(input: Input) -> String {
 		.collect_vec()
 		.len()
 		.to_string()
-}
+});
 
-pub fn complex(input: Input) -> String {
+solution!("2022.4.2", complex(input) {
 	lines(input)
 		.map(|line| {
 			let (first, second) = line
@@ -74,7 +73,7 @@ pub fn complex(input: Input) -> String {
 		.collect_vec()
 		.len()
 		.to_string()
-}
+});
 
 #[cfg(test)]
 mod test {
@@ -94,7 +93,7 @@ mod test {
 		"#
 		);
 
-		assert_eq!(basic(input), "2");
+		assert_eq!(basic::solution(input), "2");
 	}
 
 	#[test]
@@ -110,6 +109,6 @@ mod test {
 		"#
 		);
 
-		assert_eq!(complex(input), "4");
+		assert_eq!(complex::solution(input), "4");
 	}
 }
