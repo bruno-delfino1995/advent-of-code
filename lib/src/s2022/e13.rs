@@ -72,7 +72,7 @@ impl PartialOrd for Data {
 	}
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
 struct Packet(Vec<Data>);
 
 impl fmt::Debug for Packet {
@@ -96,6 +96,10 @@ impl Pair {
 		let right = &self.1;
 
 		matches!(left.cmp(right), Ordering::Less | Ordering::Equal)
+	}
+
+	fn unpack(self) -> Vec<Packet> {
+		vec![self.0, self.1]
 	}
 }
 
@@ -143,7 +147,7 @@ mod parser {
 	}
 }
 
-pub fn basic(mut input: Input) -> String {
+fn parse(mut input: Input) -> Vec<Pair> {
 	let contents = {
 		let mut buf = String::new();
 		input.read_to_string(&mut buf).unwrap();
@@ -154,6 +158,12 @@ pub fn basic(mut input: Input) -> String {
 	let pairs = all_consuming(parser::pairs)(&contents).finish().unwrap().1;
 
 	pairs
+}
+
+pub fn basic(input: Input) -> String {
+	let pairs = parse(input);
+
+	pairs
 		.into_iter()
 		.map(|p| p.ordered())
 		.enumerate()
@@ -162,8 +172,23 @@ pub fn basic(mut input: Input) -> String {
 		.to_string()
 }
 
-pub fn complex(_input: Input) -> String {
-	todo!()
+pub fn complex(input: Input) -> String {
+	let left = Packet(vec![Data::List(vec![Data::Number(2)])]);
+	let right = Packet(vec![Data::List(vec![Data::Number(6)])]);
+	let delimiters = Pair(left.clone(), right.clone());
+
+	let mut pairs = parse(input);
+	pairs.push(delimiters);
+
+	let mut packets = pairs.into_iter().flat_map(|p| p.unpack()).collect_vec();
+	packets.sort();
+
+	let first = packets.iter().position(|p| p == &left).unwrap();
+	let second = packets.iter().position(|p| p == &right).unwrap();
+
+	let key = (first + 1) * (second + 1);
+
+	key.to_string()
 }
 
 #[cfg(test)]
@@ -171,47 +196,43 @@ mod test {
 	use super::*;
 	use crate::input;
 
+	fn input() -> Input {
+		input!(
+			r#"
+				[1,1,3,1,1]
+				[1,1,5,1,1]
+
+				[[1],[2,3,4]]
+				[[1],4]
+
+				[9]
+				[[8,7,6]]
+
+				[[4,4],4,4]
+				[[4,4],4,4,4]
+
+				[7,7,7,7]
+				[7,7,7]
+
+				[]
+				[3]
+
+				[[[]]]
+				[[]]
+
+				[1,[2,[3,[4,[5,6,7]]]],8,9]
+				[1,[2,[3,[4,[5,6,0]]]],8,9]
+			"#
+		)
+	}
+
 	#[test]
 	fn first_example() {
-		let input = input!(
-			r#"
-			[1,1,3,1,1]
-			[1,1,5,1,1]
-
-			[[1],[2,3,4]]
-			[[1],4]
-
-			[9]
-			[[8,7,6]]
-
-			[[4,4],4,4]
-			[[4,4],4,4,4]
-
-			[7,7,7,7]
-			[7,7,7]
-
-			[]
-			[3]
-
-			[[[]]]
-			[[]]
-
-			[1,[2,[3,[4,[5,6,7]]]],8,9]
-			[1,[2,[3,[4,[5,6,0]]]],8,9]
-		"#
-		);
-
-		assert_eq!(basic(input), "13")
+		assert_eq!(basic(input()), "13")
 	}
 
 	#[test]
 	fn second_example() {
-		let input = input!(
-			r#"
-			3
-		"#
-		);
-
-		assert_eq!(complex(input), "2")
+		assert_eq!(complex(input()), "140")
 	}
 }
