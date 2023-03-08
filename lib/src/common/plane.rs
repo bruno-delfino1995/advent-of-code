@@ -1,5 +1,8 @@
+use auto_ops::*;
+
+use std::cmp::Ordering;
 use std::fmt;
-use std::ops::{Add, Mul, Sub};
+use std::ops::*;
 
 use Axis::*;
 use Direction::*;
@@ -148,24 +151,57 @@ impl From<Motion> for Point {
 	}
 }
 
-impl Add for Point {
-	type Output = Self;
-
-	fn add(self, rhs: Self) -> Self::Output {
-		let x = self.x + rhs.x;
-		let y = self.y + rhs.y;
-
-		Self::new(x, y)
+impl From<(isize, isize)> for Point {
+	fn from((x, y): (isize, isize)) -> Self {
+		Point::new(x, y)
 	}
 }
 
-impl Sub for Point {
-	type Output = Self;
+impl Ord for Point {
+	fn cmp(&self, other: &Self) -> Ordering {
+		let x = self.x.cmp(&other.x);
+		let y = self.y.cmp(&other.y);
 
-	fn sub(self, rhs: Self) -> Self::Output {
-		let x = self.x - rhs.x;
-		let y = self.y - rhs.y;
-
-		Self::new(x, y)
+		if x != Ordering::Equal { x } else { y }
 	}
 }
+
+impl PartialOrd for Point {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl_op_ex!(+ |lhs: &Point, rhs: &Point| -> Point {
+	let x = lhs.x + rhs.x;
+	let y = lhs.y + rhs.y;
+
+	Point::new(x, y)
+});
+
+impl_op_ex!(+ |lhs: &Point, rhs: &Motion| -> Point {
+	let point: Point = rhs.clone().into();
+	lhs + point
+});
+
+impl_op_ex!(+ |lhs: &Point, rhs: &Direction| -> Point {
+	let motion: Motion = rhs.clone().into();
+	lhs + motion
+});
+
+impl_op_ex!(- |lhs: &Point, rhs: &Point| -> Point {
+	let x = lhs.x - rhs.x;
+	let y = lhs.y - rhs.y;
+
+	Point::new(x, y)
+});
+
+impl_op_ex!(- |lhs: &Point, rhs: &Motion| -> Point {
+	let point: Point = rhs.clone().into();
+	lhs - point
+});
+
+impl_op_ex!(- |lhs: &Point, rhs: &Direction| -> Point {
+	let motion: Motion = rhs.clone().into();
+	lhs - motion
+});
