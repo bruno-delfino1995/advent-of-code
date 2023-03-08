@@ -41,6 +41,7 @@ impl Into<(Vec<isize>, Vec<isize>)> for Trace {
 struct Cave {
 	points: BTreeSet<Point>,
 	height: isize,
+	floor: isize,
 }
 
 impl From<Vec<Trace>> for Cave {
@@ -63,7 +64,8 @@ impl From<Vec<Trace>> for Cave {
 
 		Cave {
 			points,
-			height: height.unwrap()
+			height: height.unwrap(),
+			floor: 0
 		}
 	}
 }
@@ -76,13 +78,21 @@ impl Cave {
 	fn drip(mut self) -> Self {
 		// Generate a point at 500x(max y) and drop it until it sets or falls beyond (min y)
 		let mut sand = Point::new(500, 0);
+		if self.points.contains(&sand) {
+			return self;
+		}
 
 		loop {
+			if self.floor != 0 && sand.y() == self.floor - 1 {
+				self.points.insert(sand);
+				return self;
+			}
+
 			if sand.y() > self.height {
 				return self;
 			}
 		
-			// 0 is at the top instead of at the bottom, that's why down = up in terms of motions
+			// 0 is the top instead of the bottom, that's why down = up in terms of motions
 			let down = sand + Direction::Up;
 			let left = sand + Direction::Up + Direction::Left;
 			let right = sand + Direction::Up + Direction::Right;
@@ -156,6 +166,24 @@ solution!("2022.14.1", basic(input) {
 	amount.to_string()
 });
 
+solution!("2022.14.2", complex(input) {
+	let mut cave = parse(input);
+	cave.floor = cave.height + 2;
+
+	let mut amount = 0;
+	loop {
+		let before = cave.len();
+		cave = cave.drip();
+		if cave.len() > before {
+			amount += 1;
+		} else {
+			break;
+		}
+	};
+	
+	amount.to_string()
+});
+
 #[cfg(test)]
 mod test {
 	use super::*;
@@ -173,5 +201,10 @@ mod test {
 	#[test]
 	fn first_example() {
 		assert_eq!(basic::solution(input()), "24")
+	}
+
+	#[test]
+	fn second_example() {
+		assert_eq!(complex::solution(input()), "93")
 	}
 }
