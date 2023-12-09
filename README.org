@@ -1,0 +1,19 @@
+#+title: Advent of Code Runner
+
+#+BEGIN_QUOTE
+Why use a single language when you could have them all?
+#+END_QUOTE
+
+Here, you’ll find the code I’ve used for every problem I managed to solve. As I use a different language every time, there are orphan branches for each language with the solutions I have used that tech. To manage the solution, I’ve made a simple shell script that uses ~git worktree~ to address the "subrepos" along with ~yq~ to run simple tests.
+
+Since there are multiple inputs for the same problem and I didn’t want to publish mine, the input folder is empty. To include your inputs, you’ll need to put them at ~yyyy/MM-{1,2}.txt~ - the same path for the tests but with a ~txt~ extension instead. The script then pipes inputs to solutions housed at ~solutions/<lang>~, which come from branches with the language name. Each language used to solve the challenges must have a basic ~Justfile~ with three recipes:
+
+- ~setup~: for laying foundations, such as runtimes and other dependencies;
+- ~prepare puzzle~: for doing pre-work right before running a solution;
+- ~solve puzzle~: for receiving the forwarded input and giving a clean output, such as expected by the site.
+
+To run the project, all you need is to set your language of choice with ~./advent-of-code -s -l <lang>~ and then solve the challenges with ~./advent-of-code yyyy/MM-{1,2} -l lang~.
+
+* Tips
+
+- Whenever developing or focusing on a single language, create a ~.envrc~ to export the ~LANGUAGE~ variable so you don’t need to use ~-l <lang>~ every time.

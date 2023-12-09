@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+IFS=$'\n\t'
+
+function check_requirements() {
+  if ! command -v just &> /dev/null; then
+    echo "just could not be found"
+    exit 1
+  fi
+
+  if ! command -v yq &> /dev/null; then
+    echo -e "yq could not be found"
+    exit 1
+  fi
+}
+
+function show_usage() {
+  cat <<EOF
+Advent of Code Runner
+
+Usage:
+  advent-of-code <puzzle> (--lang <lang>) [--test] [--setup]
+  advent-of-code --setup --lang elixir
+  advent-of-code 2023/01-1 --lang rust
+
+Options:
+  -h --help         Show this help
+  -l --lang=<lang>  Solve the puzzle with language <lang>
+  -t --test         Use test data instead of puzzle input
+  -s --setup        Setup the desired lang for the first time
+EOF
+}
+
+function setup_solver() {
+  local language="$1"
+
+  local dir="solutions/$language"
+  if [[ -d "$dir" ]]; then
+    cd "$dir"
+    just setup
+  else
+    mkdir -p "solutions"
+    git worktree add -f "$dir" "$language"
+    cd "$dir"
+    just setup
+  fi
+}
+
+function run_solution() {
+  local language="$1"
+  local puzzle="$2"
+  local input="$3"
+
+  cd "solutions/$language"
+  just prepare "$puzzle" > /dev/null
+
+  echo "$input" | just solve "$puzzle"
+}
+
+function run_test() {
+  local language="$1"
+  local puzzle="$2"
+
+  local test="./examples/$puzzle.yaml"
+
+  local input
+  local expected
+  local actual
+
+  input=$(yq '.input' "$test")
+  actual=$(run_solution "$language" "$puzzle" "$input")
+  expected=$(yq '.output' "$test")
+
+  if [[ "$actual" == "$expected" ]]; then
+    echo "Test passed!!!"
+    exit 0
+  else
+    echo -e "Test failed!!!\n"
+    echo -e "Expected: \"\"\"\n$expected\n\"\"\""
+    echo -e "Actual: \"\"\"\n$actual\n\"\"\""
+    exit 1
+  fi
+}
+
+check_requirements
+
+POSITIONAL_ARGS=()
+TEST=NO
+SETUP=NO
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      show_usage
+      exit 0
+      ;;
+    -l|--lang)
+      LANGUAGE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -t|--test)
+      TEST=YES
+      shift
+      ;;
+    -s|--setup)
+      SETUP=YES
+      shift
+      ;;
+    -*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+cd "$(dirname "$(realpath -- "$0")")"
+
+if [[ "$SETUP" == "YES" ]]; then
+  if [[ -z "$LANGUAGE" ]]; then
+    echo "You need to provide which language to set up"
+    exit 1
+  fi
+
+  setup_solver "$LANGUAGE"
+
+  exit 0
+fi
+
+if [[ -z "$1" ]]; then
+  echo -e "You need to provide the puzzle to execute\n"
+
+  show_usage
+
+  exit 1
+fi
+
+if [[ -z "$LANGUAGE" ]]; then
+  echo -e "You need to provide which language to use\n"
+
+  show_usage
+
+  exit 1
+fi
+
+PUZZLE="$1"
+
+if [[ "$TEST" == "YES" ]]; then
+  run_test "$LANGUAGE" "$PUZZLE"
+fi
+
+INPUT=$(cat "inputs/$PUZZLE.txt")
+run_solution "$LANGUAGE" "$PUZZLE" "$INPUT"
