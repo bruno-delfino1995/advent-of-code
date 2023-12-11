@@ -1,4 +1,7 @@
-defmodule AdventOfCode.S2023.E01 do
+defmodule AdventOfCode.Y2023.D01 do
+  use AdventOfCode.Solution
+
+  @impl true
   def basic(input) do
     input
     |> Stream.map(&calibration_value/1)
