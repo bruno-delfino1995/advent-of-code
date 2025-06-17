@@ -1,0 +1,15 @@
+[env]
+LANGUAGE="elixir"
+
+[tools]
+elixir="1.15.7-otp-26"
+erlang="26.1.2"
+
+[tasks.setup]
+run="mix do deps.get, deps.compile"
+
+[tasks.prepare]
+run="mix compile"
+
+[tasks.solve]
+run="mix solve"
