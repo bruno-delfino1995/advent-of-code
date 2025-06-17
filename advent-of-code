@@ -38,12 +38,16 @@ function setup_solver() {
   local dir="solutions/$language"
   if [[ -d "$dir" ]]; then
     cd "$dir"
-    just setup
+    mise run setup
+
+    return 0
   else
     mkdir -p "solutions"
-    git worktree add -f "$dir" "$language"
+    git worktree add "$dir" "$language"
     cd "$dir"
-    just setup
+    mise run setup
+
+    return 0
   fi
 }
 
@@ -53,9 +57,9 @@ function run_solution() {
   local input="$3"
 
   cd "solutions/$language"
-  just prepare "$puzzle" > /dev/null
+  mise run prepare "$puzzle" > /dev/null
 
-  echo "$input" | just solve "$puzzle"
+  echo "$input" | mise run solve "$puzzle"
 }
 
 function run_test() {
@@ -74,12 +78,14 @@ function run_test() {
 
   if [[ "$actual" == "$expected" ]]; then
     echo "Test passed!!!"
-    exit 0
+
+    return 0
   else
     echo -e "Test failed!!!\n"
     echo -e "Expected: \"\"\"\n$expected\n\"\"\""
     echo -e "Actual: \"\"\"\n$actual\n\"\"\""
-    exit 1
+
+    return 1
   fi
 }
 
@@ -97,8 +103,8 @@ while [[ $# -gt 0 ]]; do
       ;;
     -l|--lang)
       LANGUAGE="$2"
-      shift # past argument
-      shift # past value
+      shift
+      shift
       ;;
     -t|--test)
       TEST=YES
@@ -113,33 +119,25 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
     *)
-      POSITIONAL_ARGS+=("$1") # save positional arg
-      shift # past argument
+      POSITIONAL_ARGS+=("$1")
+      shift
       ;;
   esac
 done
 
-set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+set -- "${POSITIONAL_ARGS[@]}"
 
 cd "$(dirname "$(realpath -- "$0")")"
 
 if [[ "$SETUP" == "YES" ]]; then
   if [[ -z "$LANGUAGE" ]]; then
     echo "You need to provide which language to set up"
+
     exit 1
   fi
 
   setup_solver "$LANGUAGE"
-
-  exit 0
-fi
-
-if [[ -z "$1" ]]; then
-  echo -e "You need to provide the puzzle to execute\n"
-
-  show_usage
-
-  exit 1
+  exit $?
 fi
 
 if [[ -z "$LANGUAGE" ]]; then
@@ -150,10 +148,19 @@ if [[ -z "$LANGUAGE" ]]; then
   exit 1
 fi
 
+if [[ -z "$1" ]]; then
+  echo -e "You need to provide the puzzle to execute\n"
+
+  show_usage
+
+  exit 1
+fi
+
 PUZZLE="$1"
 
 if [[ "$TEST" == "YES" ]]; then
   run_test "$LANGUAGE" "$PUZZLE"
+  exit $?
 fi
 
 INPUT=$(cat "inputs/$PUZZLE.txt")
