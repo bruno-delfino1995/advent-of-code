@@ -14,6 +14,8 @@ Since there are multiple inputs for the same problem and I didn’t want to publ
 
 To run the project, all you need is to set your language of choice with ~./advent-of-code -s -l <lang>~ and then solve the challenges with ~./advent-of-code yyyy/MM-{1,2} -l lang~.
 
+To add a new language, you can run ~./advent-of-code -n -l <lang>~. It'll create a new branch and check it out in the solutions folder.
+
 * Tips
 
 - Whenever developing or focusing on a single language, create a ~.mise.local.toml~ to export the ~LANGUAGE~ variable so you don’t need to use ~-l <lang>~ every time.

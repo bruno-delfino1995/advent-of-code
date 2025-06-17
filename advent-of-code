@@ -29,7 +29,32 @@ Options:
   -l --lang=<lang>  Solve the puzzle with language <lang>
   -t --test         Use test data instead of puzzle input
   -s --setup        Setup the desired lang for the first time
+  -n --new          Create the structure for a new language branch
 EOF
+}
+
+function create_solver() {
+  local language="$1"
+
+  local repo=$(pwd)
+  local dir="solutions/$language"
+  local worktree="$(git worktree list | grep $repo/$dir)"
+
+  if [[ ! -d "$dir" ]]; then
+    git worktree add --orphan -b "$language" "$dir" > /dev/null
+    echo "Worktree created at $dir"
+
+    return 0
+  elif [[ -n "$worktree" ]]; then
+    echo "There's a worktree in the directory already"
+    echo ">  ${worktree#$repo/}"
+
+    return 0
+  else
+    echo "$dir isn't empty, and there's no worktree for it"
+
+    return 1
+  fi
 }
 
 function setup_solver() {
@@ -110,6 +135,10 @@ while [[ $# -gt 0 ]]; do
       TEST=YES
       shift
       ;;
+    -n|--new)
+      NEW=YES
+      shift
+      ;;
     -s|--setup)
       SETUP=YES
       shift
@@ -128,6 +157,16 @@ done
 set -- "${POSITIONAL_ARGS[@]}"
 
 cd "$(dirname "$(realpath -- "$0")")"
+
+if [[ "$NEW" == "YES" ]]; then
+  if [[ -z "$LANGUAGE" ]]; then
+    echo "You need to provide which language to create"
+    exit 1
+  fi
+
+  create_solver "$LANGUAGE"
+  exit $?
+fi
 
 if [[ "$SETUP" == "YES" ]]; then
   if [[ -z "$LANGUAGE" ]]; then
