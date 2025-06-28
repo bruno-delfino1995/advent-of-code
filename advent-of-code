@@ -3,9 +3,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-DIR=$(realpath "$(dirname "$0")")
+REPO=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
-cd "$DIR" || exit 1
+cd "$REPO" || exit 1
 
 function show_usage() {
   cat <<EOF
@@ -44,7 +44,7 @@ function list_languages() {
 function list_solutions() {
   local language="$1"
 
-  local dir="$DIR/solutions/$language"
+  local dir="$REPO/solutions/$language"
 
   if [[ ! -d "$dir" ]]; then
     echo "There's no solution using $language"
@@ -62,7 +62,7 @@ function list_solutions() {
 function create_solver() {
   local language="$1"
 
-  local dir="$DIR/solutions/$language"
+  local dir="$REPO/solutions/$language"
   local worktree="$(git worktree list | grep $dir)"
 
   if [[ ! -d "$dir" ]]; then
@@ -72,7 +72,7 @@ function create_solver() {
     return 0
   elif [[ -n "$worktree" ]]; then
     echo "There's a worktree in the directory already"
-    echo ">  ${worktree#$DIR/}"
+    echo ">  ${worktree#$REPO/}"
 
     return 0
   else
@@ -85,7 +85,7 @@ function create_solver() {
 function setup_solver() {
   local language="$1"
 
-  local dir="solutions/$language"
+  local dir="$REPO/solutions/$language"
   if [[ ! -d "$dir" ]]; then
     mkdir -p "solutions"
     git worktree add "$dir" "$language"
@@ -101,7 +101,7 @@ function run_solution() {
   local language="$1"
   local puzzle="$2"
 
-  local input=$(cat "$DIR/inputs/$puzzle.txt")
+  local input=$(cat "$REPO/inputs/$puzzle.txt")
 
   cd "solutions/$language" || return 1
   mise run prepare > /dev/null
@@ -113,7 +113,7 @@ function run_test() {
   local language="$1"
   local puzzle="$2"
 
-  local test="$DIR/examples/$puzzle.yaml"
+  local test="$REPO/examples/$puzzle.yaml"
 
   local input
   local expected
@@ -139,7 +139,7 @@ function run_test() {
 function remove_solver() {
   local language="$1"
 
-  local dir="solutions/$language"
+  local dir="$REPO/solutions/$language"
 
   if [[ ! -d "$dir" ]]; then
     git worktree remove "$dir"
