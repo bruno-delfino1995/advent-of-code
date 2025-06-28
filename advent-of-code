@@ -19,11 +19,44 @@ Usage:
 Options:
   -h --help         Show this help
   -l --lang=<lang>  Solve the puzzle with language <lang>
+  --list            List the available languages or solutions for <lang>
   --new             Create the structure for a new <lang> branch
   --remove          Remove the worktree for the <lang>
   --setup           Setup <lang> for the first time
   --test            Use examples instead of personal puzzle input
 EOF
+}
+
+function list_languages() {
+  local from_local=$(git branch | sed 's/^*//;s/^[[:space:]]*//')
+  local from_remote=$(git branch --remotes | sed 's/origin\///g;/->/d')
+  local from_worktrees=$(git worktree list | sed 's/.*\[\([^]]*\)\].*/\1/')
+
+  echo -e "$from_local\n$from_worktrees\n$from_remote" \
+    | grep -vE "main|HEAD" \
+    | sed "s/^[[:space:]]*//;" \
+    | sort \
+    | uniq
+
+  return 0
+}
+
+function list_solutions() {
+  local language="$1"
+
+  local dir="$DIR/solutions/$language"
+
+  if [[ ! -d "$dir" ]]; then
+    echo "There's no solution using $language"
+    echo "Consider starting a new one with --new or setup it with --setup"
+
+    return 1
+  fi
+
+  cd "$dir" || return 1
+  mise run prepare > /dev/null
+
+  mise run list
 }
 
 function create_solver() {
@@ -71,7 +104,7 @@ function run_solution() {
   local input=$(cat "$DIR/inputs/$puzzle.txt")
 
   cd "solutions/$language" || return 1
-  mise run prepare "$puzzle" > /dev/null
+  mise run prepare > /dev/null
 
   echo "$input" | mise run solve "$puzzle"
 }
@@ -136,6 +169,7 @@ check_requirements
 
 POSITIONAL_ARGS=()
 LANGUAGE=""
+LIST="NO"
 TEST="NO"
 SETUP="NO"
 NEW="NO"
@@ -152,6 +186,8 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --list)
+      LIST="YES"
       shift
       ;;
     --new)
@@ -182,6 +218,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL_ARGS[@]}"
+
+if [[ "$LIST" == "YES" ]]; then
+  if [[ -z "$LANGUAGE" ]]; then
+    list_languages
+    exit $?
+  fi
+
+  list_solutions "$LANGUAGE"
+  exit $?
+fi
 
 if [[ -z "$LANGUAGE" ]]; then
   echo -e "You need to provide which language to use\n"
