@@ -1,0 +1,24 @@
+[tools]
+python="3.13.5"
+
+[tasks.setup]
+run="""
+python -m venv ./venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+"""
+
+[tasks.prepare]
+run=""
+
+[tasks.list]
+run="""
+source venv/bin/activate
+python -m advent_of_code list
+"""
+
+[tasks.solve]
+run="""
+source venv/bin/activate
+python -m advent_of_code solve"
+"""
