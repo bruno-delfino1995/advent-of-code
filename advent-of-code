@@ -101,12 +101,22 @@ function run_solution() {
   local language="$1"
   local puzzle="$2"
 
-  local input=$(cat "$REPO/inputs/$puzzle.txt")
+  local input="$REPO/inputs/$puzzle.txt"
+
+  if [[ ! -r "$input" ]]; then
+    alt=$(echo "$puzzle" | sed 's/p[[:digit:]]$//')
+    input="$REPO/inputs/$alt.txt"
+  fi
+
+  if [[ ! -r "$input" ]]; then
+    echo "No input file named $puzzle.txt or $alt.txt found in inputs folder"
+    return 1
+  fi
 
   cd "solutions/$language" || return 1
   mise run prepare > /dev/null
 
-  echo "$input" | mise run solve "$puzzle"
+  cat "$input" | mise run solve "$puzzle"
 }
 
 function run_test() {
