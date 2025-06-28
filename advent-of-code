@@ -14,7 +14,7 @@ Advent of Code Runner
 Usage:
   advent-of-code <puzzle> (--lang <lang>) [...options]
   advent-of-code --setup --lang elixir
-  advent-of-code 2023/01-1 --lang rust
+  advent-of-code y2015d01p1 --lang rust
 
 Options:
   -h --help         Show this help
