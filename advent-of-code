@@ -1,44 +1,36 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
-function check_requirements() {
-  if ! command -v just &> /dev/null; then
-    echo "just could not be found"
-    exit 1
-  fi
+DIR=$(realpath "$(dirname "$0")")
 
-  if ! command -v yq &> /dev/null; then
-    echo -e "yq could not be found"
-    exit 1
-  fi
-}
+cd "$DIR" || exit 1
 
 function show_usage() {
   cat <<EOF
 Advent of Code Runner
 
 Usage:
-  advent-of-code <puzzle> (--lang <lang>) [--test] [--setup]
+  advent-of-code <puzzle> (--lang <lang>) [...options]
   advent-of-code --setup --lang elixir
   advent-of-code 2023/01-1 --lang rust
 
 Options:
   -h --help         Show this help
   -l --lang=<lang>  Solve the puzzle with language <lang>
-  -t --test         Use test data instead of puzzle input
-  -s --setup        Setup the desired lang for the first time
-  -n --new          Create the structure for a new language branch
+  --new             Create the structure for a new <lang> branch
+  --remove          Remove the worktree for the <lang>
+  --setup           Setup <lang> for the first time
+  --test            Use examples instead of personal puzzle input
 EOF
 }
 
 function create_solver() {
   local language="$1"
 
-  local repo=$(pwd)
-  local dir="solutions/$language"
-  local worktree="$(git worktree list | grep $repo/$dir)"
+  local dir="$DIR/solutions/$language"
+  local worktree="$(git worktree list | grep $dir)"
 
   if [[ ! -d "$dir" ]]; then
     git worktree add --orphan -b "$language" "$dir" > /dev/null
@@ -47,7 +39,7 @@ function create_solver() {
     return 0
   elif [[ -n "$worktree" ]]; then
     echo "There's a worktree in the directory already"
-    echo ">  ${worktree#$repo/}"
+    echo ">  ${worktree#$DIR/}"
 
     return 0
   else
@@ -61,27 +53,24 @@ function setup_solver() {
   local language="$1"
 
   local dir="solutions/$language"
-  if [[ -d "$dir" ]]; then
-    cd "$dir"
-    mise run setup
-
-    return 0
-  else
+  if [[ ! -d "$dir" ]]; then
     mkdir -p "solutions"
     git worktree add "$dir" "$language"
-    cd "$dir"
-    mise run setup
-
-    return 0
   fi
+
+  cd "$dir" || return 1
+  mise run setup
+
+  return 0
 }
 
 function run_solution() {
   local language="$1"
   local puzzle="$2"
-  local input="$3"
 
-  cd "solutions/$language"
+  local input=$(cat "$DIR/inputs/$puzzle.txt")
+
+  cd "solutions/$language" || return 1
   mise run prepare "$puzzle" > /dev/null
 
   echo "$input" | mise run solve "$puzzle"
@@ -91,7 +80,7 @@ function run_test() {
   local language="$1"
   local puzzle="$2"
 
-  local test="./examples/$puzzle.yaml"
+  local test="$DIR/examples/$puzzle.yaml"
 
   local input
   local expected
@@ -114,11 +103,43 @@ function run_test() {
   fi
 }
 
+function remove_solver() {
+  local language="$1"
+
+  local dir="solutions/$language"
+
+  if [[ ! -d "$dir" ]]; then
+    git worktree remove "$dir"
+    git branch -d "$language"
+
+    echo "Worktree and branch for $language removed"
+    return 0
+  else
+    echo "There's no worktree for $language"
+    return 1
+  fi
+}
+
+function check_requirements() {
+  if ! command -v mise &> /dev/null; then
+    echo "mise could not be found"
+    exit 1
+  fi
+
+  if ! command -v yq &> /dev/null; then
+    echo -e "yq could not be found"
+    exit 1
+  fi
+}
+
 check_requirements
 
 POSITIONAL_ARGS=()
-TEST=NO
-SETUP=NO
+LANGUAGE=""
+TEST="NO"
+SETUP="NO"
+NEW="NO"
+REMOVE="NO"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -131,16 +152,22 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    -t|--test)
-      TEST=YES
       shift
       ;;
-    -n|--new)
-      NEW=YES
+    --new)
+      NEW="YES"
       shift
       ;;
-    -s|--setup)
-      SETUP=YES
+    --setup)
+      SETUP="YES"
+      shift
+      ;;
+    --test)
+      TEST="YES"
+      shift
+      ;;
+    --remove)
+      REMOVE="YES"
       shift
       ;;
     -*)
@@ -156,42 +183,32 @@ done
 
 set -- "${POSITIONAL_ARGS[@]}"
 
-cd "$(dirname "$(realpath -- "$0")")"
+if [[ -z "$LANGUAGE" ]]; then
+  echo -e "You need to provide which language to use\n"
+
+  show_usage
+  exit 1
+fi
+
+if [[ "$REMOVE" == "YES" ]]; then
+  remove_solver "$LANGUAGE"
+  exit $?
+fi
 
 if [[ "$NEW" == "YES" ]]; then
-  if [[ -z "$LANGUAGE" ]]; then
-    echo "You need to provide which language to create"
-    exit 1
-  fi
-
   create_solver "$LANGUAGE"
   exit $?
 fi
 
 if [[ "$SETUP" == "YES" ]]; then
-  if [[ -z "$LANGUAGE" ]]; then
-    echo "You need to provide which language to set up"
-
-    exit 1
-  fi
-
   setup_solver "$LANGUAGE"
   exit $?
 fi
 
-if [[ -z "$LANGUAGE" ]]; then
-  echo -e "You need to provide which language to use\n"
-
-  show_usage
-
-  exit 1
-fi
-
-if [[ -z "$1" ]]; then
+if [[ ! -v 1 ]]; then
   echo -e "You need to provide the puzzle to execute\n"
 
   show_usage
-
   exit 1
 fi
 
@@ -202,5 +219,4 @@ if [[ "$TEST" == "YES" ]]; then
   exit $?
 fi
 
-INPUT=$(cat "inputs/$PUZZLE.txt")
-run_solution "$LANGUAGE" "$PUZZLE" "$INPUT"
+run_solution "$LANGUAGE" "$PUZZLE"
