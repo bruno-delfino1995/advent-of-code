@@ -3,9 +3,7 @@ defmodule Mix.Tasks.Solve do
 
   @impl Mix.Task
   def run([challenge]) do
-    [day, phase] = String.split(challenge, "-")
-
-    case AdventOfCode.solve({day, phase}) do
+    case AdventOfCode.solve(challenge) do
       {:ok, result} ->
         IO.puts(result)
       {:error, message} ->

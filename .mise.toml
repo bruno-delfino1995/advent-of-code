@@ -6,10 +6,17 @@ elixir="1.15.7-otp-26"
 erlang="26.1.2"
 
 [tasks.setup]
+quiet=true
 run="mix do deps.get, deps.compile"
 
 [tasks.prepare]
+quiet=true
 run="mix compile"
 
+[tasks.list]
+quiet=true
+run="mix list"
+
 [tasks.solve]
+quiet=true
 run="mix solve"
