@@ -1,0 +1,11 @@
+[tools]
+rust = { version = "1.88.0", components = "rustfmt,clippy" }
+
+[env]
+LANGUAGE = "rust"
+
+[tasks.compile]
+run = [
+  "cargo build",
+  "cp target/debug/bin ./solver"
+]

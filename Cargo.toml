@@ -1,11 +1,11 @@
 [workspace]
 members = ["bin", "lib"]
+resolver = "3"
 
 [workspace.package]
 description = "Solutions for AOC puzzles"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 
 [workspace.dependencies]
 lib = { path = "./lib", version = "0.0.0" }
-probe = { path = "./probe", version = "0.0.0" }
