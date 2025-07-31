@@ -127,6 +127,7 @@ function run_test() {
   local actual
 
   input=$(yq '.input' "$test")
+  # FIXME: The function doesn't use the input argument
   actual=$(run_solution "$language" "$puzzle" "$input")
   expected=$(yq '.output' "$test")
 
