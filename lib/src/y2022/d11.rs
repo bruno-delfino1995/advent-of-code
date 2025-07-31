@@ -244,7 +244,7 @@ fn run(mut input: Input, rounds: usize, too_worried: bool) -> Inspections {
 		.unwrap()
 }
 
-solution!("2022.11.1", basic(input) {
+solution!("y2022d11p1", basic(input) {
 	let mut inspections = run(input, 20, false).take();
 	inspections.sort_by(|a, b| b.cmp(a));
 
@@ -253,7 +253,7 @@ solution!("2022.11.1", basic(input) {
 	res.to_string()
 });
 
-solution!("2022.11.2", complex(input) {
+solution!("y2022d11p2", complex(input) {
 	let mut inspections = run(input, 10_000, true).take();
 	inspections.sort_by(|a, b| b.cmp(a));
 

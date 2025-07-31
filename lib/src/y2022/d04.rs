@@ -41,7 +41,7 @@ impl FromStr for Assignment {
 	}
 }
 
-solution!("2022.4.1", basic(input) {
+solution!("y2022d04p1", basic(input) {
 	lines(input)
 		.map(|line| {
 			let (first, second) = line
@@ -58,7 +58,7 @@ solution!("2022.4.1", basic(input) {
 		.to_string()
 });
 
-solution!("2022.4.2", complex(input) {
+solution!("y2022d04p2", complex(input) {
 	lines(input)
 		.map(|line| {
 			let (first, second) = line

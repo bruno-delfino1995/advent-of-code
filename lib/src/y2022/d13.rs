@@ -154,7 +154,7 @@ fn parse(input: Input) -> Vec<Pair> {
 	parsed.unwrap().1
 }
 
-solution!("2022.13.1", basic(input) {
+solution!("y2022d13p1", basic(input) {
 	let pairs = parse(input);
 
 	pairs
@@ -166,7 +166,7 @@ solution!("2022.13.1", basic(input) {
 		.to_string()
 });
 
-solution!("2022.13.2", complex(input) {
+solution!("y2022d13p2", complex(input) {
 	let left = Packet(vec![Data::List(vec![Data::Number(2)])]);
 	let right = Packet(vec![Data::List(vec![Data::Number(6)])]);
 	let delimiters = Pair(left.clone(), right.clone());

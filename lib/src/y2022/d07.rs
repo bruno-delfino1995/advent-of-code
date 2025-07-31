@@ -296,7 +296,7 @@ impl Shell {
 	}
 }
 
-solution!("2022.7.1", basic(input) {
+solution!("y2022d07p1", basic(input) {
 	let shell = lines(input).fold(Shell::new(), |shell, line| shell.parse(&line));
 
 	let root = shell.close().root().unwrap();
@@ -310,7 +310,7 @@ solution!("2022.7.1", basic(input) {
 		.to_string()
 });
 
-solution!("2022.7.2", complex(input) {
+solution!("y2022d07p2", complex(input) {
 	const FS_SIZE: usize = 70000000;
 	const UPDATE_SIZE: usize = 30000000;
 

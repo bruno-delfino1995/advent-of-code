@@ -222,13 +222,13 @@ fn parse(input: Input) -> Forest {
 		.unwrap()
 }
 
-solution!("2022.8.1", basic(input) {
+solution!("y2022d08p1", basic(input) {
 	let forest = parse(input);
 
 	forest.visible_from_outside().len().to_string()
 });
 
-solution!("2022.8.2", complex(input) {
+solution!("y2022d08p2", complex(input) {
 	let forest = parse(input);
 
 	forest

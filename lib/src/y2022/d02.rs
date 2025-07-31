@@ -174,7 +174,7 @@ mod parser {
 	}
 }
 
-solution!("2022.2.1", basic(input) {
+solution!("y2022d02p1", basic(input) {
 	lines(input)
 		.map(|line| {
 			let (_, round) = parser::plain(&line).expect("invalid round");
@@ -185,7 +185,7 @@ solution!("2022.2.1", basic(input) {
 		.to_string()
 });
 
-solution!("2022.2.2", complex(input) {
+solution!("y2022d02p2", complex(input) {
 	lines(input)
 		.map(|line| {
 			let (_, round) = parser::strategy(&line).expect("invalid round");

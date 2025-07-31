@@ -1,13 +1,17 @@
-use chrono::{DateTime, Datelike, Local};
-use regex::{Regex, RegexSet};
+use std::collections::HashMap;
+use std::str::FromStr;
 
-use std::{collections::HashMap, str::FromStr};
+use chrono::DateTime;
+use chrono::Datelike;
+use chrono::Local;
+
+use regex::Regex;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Puzzle {
 	year: u16,
 	day: u8,
-	phase: u8,
+	part: u8,
 }
 
 impl Puzzle {
@@ -19,8 +23,8 @@ impl Puzzle {
 		self.day as usize
 	}
 
-	pub fn phase(&self) -> usize {
-		self.phase as usize
+	pub fn part(&self) -> usize {
+		self.part as usize
 	}
 }
 
@@ -46,21 +50,14 @@ impl From<DateTime<Local>> for Puzzle {
 		Puzzle {
 			year: year as u16,
 			day: day as u8,
-			phase: 1,
+			part: 1,
 		}
 	}
 }
 
 impl From<&'static str> for Puzzle {
 	fn from(value: &'static str) -> Self {
-		match value {
-			"0.0.0" => Self {
-				year: 0,
-				day: 0,
-				phase: 0,
-			},
-			other => Self::from_str(other).expect("invalid puzzle spec"),
-		}
+		Self::from_str(value).expect("invalid puzzle spec")
 	}
 }
 
@@ -68,39 +65,20 @@ impl FromStr for Puzzle {
 	type Err = &'static str;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		let pattern = find_pattern(s).ok_or("invalid pattern")?;
-		let matches = find_matches(&pattern, s);
+		let matches = find_matches(s);
 
 		let current_puzzle = Puzzle::default();
 
 		let year = parse_year(matches.get("year"), &current_puzzle)?;
 		let day = parse_day(matches.get("day"), &year, &current_puzzle)?;
-		let phase = parse_phase(matches.get("phase"), &current_puzzle)?;
+		let part = parse_part(matches.get("part"), &current_puzzle)?;
 
-		Ok(Puzzle { year, day, phase })
+		Ok(Puzzle { year, day, part })
 	}
 }
 
-fn find_pattern(s: &str) -> Option<String> {
-	let set = RegexSet::new([
-		r"^(?P<year>\d{4}).(?P<day>\d{1,2}).(?P<phase>\d)$",
-		r"^(?P<year>\d{4}).(?P<day>\d{1,2})$",
-		r"^(?P<day>\d{1,2}).(?P<phase>\d)$",
-		r"^(?P<day>\d{1,2})$",
-	])
-	.unwrap();
-
-	let patterns: Vec<String> = set
-		.matches(s)
-		.into_iter()
-		.map(|i| set.patterns()[i].to_owned())
-		.collect();
-
-	patterns.first().map(|p| p.to_string())
-}
-
-fn find_matches(p: &str, s: &str) -> HashMap<String, String> {
-	let re = Regex::new(p).unwrap();
+fn find_matches(s: &str) -> HashMap<String, String> {
+	let re = Regex::new(r"^y(?P<year>\d{4})d(?P<day>\d{2})p(?P<part>\d)$").unwrap();
 
 	re.captures(s)
 		.map(|c| {
@@ -116,7 +94,7 @@ fn find_matches(p: &str, s: &str) -> HashMap<String, String> {
 				caps.insert(name, value);
 			}
 
-			let name = String::from("phase");
+			let name = String::from("part");
 			if let Some(value) = c.name(&name).map(|m| m.as_str().to_string()) {
 				caps.insert(name, value);
 			}
@@ -174,18 +152,18 @@ fn parse_day(
 	}
 }
 
-fn parse_phase(p: Option<&String>, Puzzle { phase: cp, .. }: &Puzzle) -> Result<u8, &'static str> {
+fn parse_part(p: Option<&String>, Puzzle { part: cp, .. }: &Puzzle) -> Result<u8, &'static str> {
 	match p {
 		None => Ok(*cp),
 		Some(p) => {
-			let p = p.parse::<u8>().map_err(|_| "unable to parse phase")?;
+			let p = p.parse::<u8>().map_err(|_| "unable to parse part")?;
 
 			if p == 0 {
-				return Err("phase starts at 1");
+				return Err("part starts at 1");
 			}
 
 			if p > 2 {
-				return Err("phase stops at 2");
+				return Err("part stops at 2");
 			}
 
 			Ok(p)

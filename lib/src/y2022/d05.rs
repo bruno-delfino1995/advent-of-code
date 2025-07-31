@@ -131,7 +131,7 @@ fn parse(input: Input) -> (Piles, Vec<Command>) {
 	(piles, commands)
 }
 
-solution!("2022.5.1", basic(input) {
+solution!("y2022d05p1", basic(input) {
 	let (mut piles, commands) = parse(input);
 
 	for c in commands {
@@ -141,7 +141,7 @@ solution!("2022.5.1", basic(input) {
 	piles.heads().into_iter().collect()
 });
 
-solution!("2022.5.2", complex(input) {
+solution!("y2022d05p2", complex(input) {
 	let (mut piles, commands) = parse(input);
 
 	for c in commands {
@@ -160,8 +160,8 @@ mod test {
 	fn first_example() {
 		let input = input!(
 			r#"
-			    [D]    
-			[N] [C]    
+			    [D]
+			[N] [C]
 			[Z] [M] [P]
 			 1   2   3
 
@@ -179,8 +179,8 @@ mod test {
 	fn second_example() {
 		let input = input!(
 			r#"
-			    [D]    
-			[N] [C]    
+			    [D]
+			[N] [C]
 			[Z] [M] [P]
 			 1   2   3
 

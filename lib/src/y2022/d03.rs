@@ -76,14 +76,14 @@ impl Group {
 	}
 }
 
-solution!("2022.3.1", basic(input) {
+solution!("y2022d03p1", basic(input) {
 	lines(input)
 		.map(|line| Rucksack::from_str(&line).unwrap().overlap().value())
 		.sum::<usize>()
 		.to_string()
 });
 
-solution!("2022.3.2", complex(input) {
+solution!("y2022d03p2", complex(input) {
 	lines(input)
 		.map(|line| Rucksack::from_str(&line).unwrap())
 		.chunks(3)

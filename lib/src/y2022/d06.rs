@@ -74,7 +74,7 @@ fn marker(message: &str, size: usize) -> usize {
 		.into_inner()
 }
 
-solution!("2022.6.1", basic(input) {
+solution!("y2022d06p1", basic(input) {
 	let message: String = lines(input).collect();
 
 	let start_at = marker(&message, 4) + 1;
@@ -82,7 +82,7 @@ solution!("2022.6.1", basic(input) {
 	start_at.to_string()
 });
 
-solution!("2022.6.2", complex(input) {
+solution!("y2022d06p2", complex(input) {
 	let message: String = lines(input).collect();
 
 	let start_at = marker(&message, 14) + 1;

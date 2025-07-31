@@ -91,12 +91,12 @@ impl Cave {
 			if sand.y() > self.height {
 				return self;
 			}
-		
+
 			// 0 is the top instead of the bottom, that's why down = up in terms of motions
 			let down = sand + Direction::Up;
 			let left = sand + Direction::Up + Direction::Left;
 			let right = sand + Direction::Up + Direction::Right;
-		
+
 			match (self.points.contains(&down), self.points.contains(&left), self.points.contains(&right)) {
 				_is_set @ (true, true, true) => {
 					self.points.insert(sand);
@@ -149,7 +149,7 @@ fn parse(input: Input) -> Cave {
 	parsed.ok().unwrap().1
 }
 
-solution!("2022.14.1", basic(input) {
+solution!("y2022d14p1", basic(input) {
 	let mut cave = parse(input);
 
 	let mut amount = 0;
@@ -162,11 +162,11 @@ solution!("2022.14.1", basic(input) {
 			break;
 		}
 	};
-	
+
 	amount.to_string()
 });
 
-solution!("2022.14.2", complex(input) {
+solution!("y2022d14p2", complex(input) {
 	let mut cave = parse(input);
 	cave.floor = cave.height + 2;
 
@@ -180,7 +180,7 @@ solution!("2022.14.2", complex(input) {
 			break;
 		}
 	};
-	
+
 	amount.to_string()
 });
 

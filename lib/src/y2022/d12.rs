@@ -202,14 +202,14 @@ fn parse(input: Input) -> Heightmap {
 	}
 }
 
-solution!("2022.12.1", basic(input) {
+solution!("y2022d12p1", basic(input) {
 	let map = parse(input);
 	let climbers = Climbers::new(map);
 
 	climbers.uphill().to_string()
 });
 
-solution!("2022.12.2", complex(input) {
+solution!("y2022d12p2", complex(input) {
 	let map = parse(input);
 	let climbers = Climbers::new(map);
 

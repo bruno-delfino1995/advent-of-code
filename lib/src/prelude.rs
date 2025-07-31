@@ -1,4 +1,4 @@
-pub use crate::{solution, Input, Puzzle};
+pub use crate::{solution, Input};
 pub use std::io::BufRead;
 
 pub fn lines(input: Input) -> Box<dyn Iterator<Item = String>> {

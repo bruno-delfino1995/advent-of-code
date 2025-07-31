@@ -1,11 +1,11 @@
 mod common;
 mod prelude;
 mod puzzle;
-mod s2022;
-mod sample;
+mod y2022;
 
 use linkme::distributed_slice;
-use std::{collections::HashMap, io::BufRead};
+use std::collections::HashMap;
+use std::io::BufRead;
 
 pub use self::puzzle::Puzzle;
 

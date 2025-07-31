@@ -40,7 +40,7 @@ fn parse(input: &str) -> Instruction {
 	Instruction::Add(amount)
 }
 
-solution!("2022.10.1", basic(input) {
+solution!("y2022d10p1", basic(input) {
 	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
 	let reg = Register::new();
 
@@ -78,7 +78,7 @@ solution!("2022.10.1", basic(input) {
 		.to_string()
 });
 
-solution!("2022.10.2", complex(input) {
+solution!("y2022d10p2", complex(input) {
 	let cycles: Box<dyn Iterator<Item = isize>> = Box::new(std::iter::empty());
 	let reg = Register::new();
 

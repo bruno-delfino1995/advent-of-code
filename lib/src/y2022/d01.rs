@@ -20,7 +20,7 @@ fn parse(input: Input) -> BinaryHeap<usize> {
 	elves
 }
 
-solution!("2022.1.1", basic(input) {
+solution!("y2022d01p1", basic(input) {
 	let mut elves = parse(input);
 
 	let max: usize = elves.pop().unwrap();
@@ -28,7 +28,7 @@ solution!("2022.1.1", basic(input) {
 	max.to_string()
 });
 
-solution!("2022.1.2", complex(input) {
+solution!("y2022d01p2", complex(input) {
 	let elves = parse(input).into_sorted_vec();
 
 	let max: usize = elves.into_iter().rev().take(3).sum();

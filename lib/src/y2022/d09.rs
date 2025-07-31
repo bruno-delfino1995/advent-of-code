@@ -179,11 +179,11 @@ fn solve(input: Input, len: usize) -> String {
 	points.len().to_string()
 }
 
-solution!("2022.9.1", basic(input) {
+solution!("y2022d09p1", basic(input) {
 	solve(input, 2)
 });
 
-solution!("2022.9.2", complex(input) {
+solution!("y2022d09p2", complex(input) {
 	solve(input, 10)
 });
 
