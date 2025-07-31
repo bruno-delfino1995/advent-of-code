@@ -54,9 +54,9 @@ function list_solutions() {
   fi
 
   cd "$dir" || return 1
-  mise run prepare > /dev/null
+  mise run compile > /dev/null
 
-  mise run list
+  ./solver list
 }
 
 function create_solver() {
@@ -91,9 +91,6 @@ function setup_solver() {
     git worktree add "$dir" "$language"
   fi
 
-  cd "$dir" || return 1
-  mise run setup
-
   return 0
 }
 
@@ -114,9 +111,9 @@ function run_solution() {
   fi
 
   cd "solutions/$language" || return 1
-  mise run prepare > /dev/null
+  mise run compile > /dev/null
 
-  cat "$input" | mise run solve "$puzzle"
+  cat "$input" | ./solver exec "$puzzle"
 }
 
 function run_test() {

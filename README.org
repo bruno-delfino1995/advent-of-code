@@ -6,12 +6,12 @@ Why use a single language when you could have them all?
 
 Here, you’ll find the code I’ve used for every problem I managed to solve. As I use a different language every time, there are orphan branches for each language. To manage the solution, I’ve made a simple shell script that uses ~git worktree~ to address the "subrepos" along with ~yq~ to run simple tests.
 
-Since there are multiple inputs for the same problem and I didn’t want to publish mine, the input folder is empty. To include your inputs, you’ll need to put them at ~yYYYYdDDp{1,2}.txt~ - the same path for the tests but with a ~txt~ extension instead. The script then pipes inputs to solutions housed at ~solutions/<lang>~, which come from branches with the language name. Each language used to solve the challenges must have a basic [[https://mise.jdx.dev/configuration.html][mise config]] with the following tasks:
+Since there are multiple inputs for the same problem and I didn’t want to publish mine, the input folder is empty. To include your inputs, you’ll need to put them at ~yYYYYdDDp{1,2}.txt~ - the same path for the tests but with a ~txt~ extension instead. The script then pipes inputs to solutions housed at ~solutions/<lang>~, which come from branches with the language name.
 
-- ~setup~: for laying foundations, such as runtimes and other dependencies;
-- ~prepare~: for doing pre-work right before running a language, like compiling a binary;
-- ~list~: for listing the available puzzles supported/solved by that language;
-- ~solve puzzle~: for receiving the forwarded input and giving a clean output, such as expected by the site.
+Each language used to solve the challenges must have a basic [[https://mise.jdx.dev/configuration.html][mise config]] with a ~compile~ task to create an executable at ~solutions/<lang>/solver~. That executable must implement two simple commands:
+
+- ~list~: which must output a list of puzzles they can solve, one per line
+- ~exec <puzzle>~: to process data from stdin, and present results at stdout
 
 To run the project, all you need is to set your language of choice with ~./advent-of-code --setup -l <lang>~ and then solve the challenges with ~./advent-of-code yYYYYdDDp{1,2} -l lang~.
 
