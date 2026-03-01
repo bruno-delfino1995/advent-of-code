@@ -94,10 +94,8 @@ function setup_solver() {
   return 0
 }
 
-function run_solution() {
-  local language="$1"
-  local puzzle="$2"
-
+function find_input() {
+  local puzzle="$1"
   local input="$REPO/inputs/$puzzle.txt"
 
   if [[ ! -r "$input" ]]; then
@@ -110,10 +108,24 @@ function run_solution() {
     return 1
   fi
 
+  echo "$input"
+}
+
+function run_solution() {
+  local language="$1"
+  local puzzle="$2"
+
+  local input
+  if [[ -z "$3" ]]; then
+    input=$(cat $(find_input "$puzzle"))
+  else
+    input="$3"
+  fi
+
   cd "solutions/$language" || return 1
   mise run compile > /dev/null || return 1
 
-  cat "$input" | ./solver exec "$puzzle"
+  echo "$input" | ./solver exec "$puzzle"
 }
 
 function run_test() {
@@ -132,9 +144,8 @@ function run_test() {
   local actual
 
   input=$(yq '.input' "$test")
-  # FIXME: The function doesn't use the input argument
-  actual=$(run_solution "$language" "$puzzle" "$input")
   expected=$(yq '.output' "$test")
+  actual=$(run_solution "$language" "$puzzle" "$input");
 
   if [[ "$actual" == "$expected" ]]; then
     echo "Test passed!!!"
