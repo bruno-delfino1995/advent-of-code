@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#MISE quiet=true
+
+# Remove mise default `set -e` to control error outputs
+set +e
+
+# Source - https://stackoverflow.com/a/59592881
+# SYNTAX:
+#   catch STDOUT_VARIABLE STDERR_VARIABLE COMMAND [ARG1[ ARG2[ ...[ ARGN]]]]
+catch() {
+    {
+        IFS=$'\n' read -r -d '' "${1}";
+        IFS=$'\n' read -r -d '' "${2}";
+        (IFS=$'\n' read -r -d '' _ERRNO_; return ${_ERRNO_});
+    } < <((printf '\0%s\0%d\0' "$(((({ shift 2; "${@}"; echo "${?}" 1>&3-; } | tr -d '\0' 1>&4-) 4>&2- 2>&1- | tr -d '\0' 1>&4-) 3>&1- | exit "$(cat)") 4>&1-)" "${?}" 1>&2) 2>&1)
+}
+
+catch stdout stderr cargo build
+if [[ $? -ne 0 ]]; then
+  echo "$stderr" >&2
+  exit 1
+fi
+
+cp target/debug/bin ./solver
