@@ -47,14 +47,14 @@ function list_solutions() {
   local dir="$REPO/solutions/$language"
 
   if [[ ! -d "$dir" ]]; then
-    echo "There's no solution using $language"
-    echo "Consider starting a new one with --new or setup it with --setup"
+    echo "There's no solution using $language" >&2
+    echo "Consider starting a new one with --new or setup it with --setup" >&2
 
     return 1
   fi
 
   cd "$dir" || return 1
-  mise run compile > /dev/null
+  mise run compile > /dev/null || return 1
 
   ./solver list
 }
@@ -76,7 +76,7 @@ function create_solver() {
 
     return 0
   else
-    echo "$dir isn't empty, and there's no worktree for it"
+    echo "$dir isn't empty, and there's no worktree for it" >&2
 
     return 1
   fi
@@ -106,12 +106,12 @@ function run_solution() {
   fi
 
   if [[ ! -r "$input" ]]; then
-    echo "No input file named $puzzle.txt or $alt.txt found in inputs folder"
+    echo "No input file named $puzzle.txt or $alt.txt found in inputs folder" >&2
     return 1
   fi
 
   cd "solutions/$language" || return 1
-  mise run compile > /dev/null
+  mise run compile > /dev/null || return 1
 
   cat "$input" | ./solver exec "$puzzle"
 }
@@ -121,6 +121,11 @@ function run_test() {
   local puzzle="$2"
 
   local test="$REPO/examples/$puzzle.yaml"
+
+  if [[ ! -r "$test" ]]; then
+    echo "No example file named $puzzle.yaml in examples folder" >&2
+    return 1
+  fi
 
   local input
   local expected
@@ -156,25 +161,26 @@ function remove_solver() {
     echo "Worktree and branch for $language removed"
     return 0
   else
-    echo "There's no worktree for $language"
+    echo "There's no worktree for $language" >&2
     return 1
   fi
 }
 
 function check_requirements() {
   if ! command -v mise &> /dev/null; then
-    echo "mise could not be found"
-    exit 1
+    echo "mise could not be found" >&2
+    return 1
   fi
 
   if ! command -v yq &> /dev/null; then
-    echo -e "yq could not be found"
-    exit 1
+    echo -e "yq could not be found" >&2
+    return 1
   fi
 }
 
-check_requirements
+check_requirements || exit 1
 
+# LANGUAGE is not specified to allow for external override
 POSITIONAL_ARGS=()
 LIST="NO"
 TEST="NO"
@@ -237,7 +243,7 @@ if [[ "$LIST" == "YES" ]]; then
 fi
 
 if [[ -z "$LANGUAGE" ]]; then
-  echo -e "You need to provide which language to use\n"
+  echo -e "You need to provide which language to use\n" >&2
 
   show_usage
   exit 1
@@ -259,7 +265,7 @@ if [[ "$SETUP" == "YES" ]]; then
 fi
 
 if [[ ! -v 1 ]]; then
-  echo -e "You need to provide the puzzle to execute\n"
+  echo -e "You need to provide the puzzle to execute\n" >&2
 
   show_usage
   exit 1
