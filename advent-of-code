@@ -28,8 +28,11 @@ EOF
 }
 
 function list_languages() {
+  # local branches except empty lines and current branch
   local from_local=$(git branch | sed 's/^*//;s/^[[:space:]]*//')
+  # remote branches without origin prefix and current branch
   local from_remote=$(git branch --remotes | sed 's/origin\///g;/->/d')
+  # capture branch name ([<name>] at the end) from a worktree list
   local from_worktrees=$(git worktree list | sed 's/.*\[\([^]]*\)\].*/\1/')
 
   echo -e "$from_local\n$from_worktrees\n$from_remote" \
@@ -125,27 +128,15 @@ function run_solution() {
   cd "solutions/$language" || return 1
   mise run compile > /dev/null || return 1
 
-  echo "$input" | ./solver exec "$puzzle"
+  echo "$input" | ./solver exec "$puzzle" 2>/dev/null
 }
 
-function run_test() {
-  local language="$1"
-  local puzzle="$2"
+function run_test_case() {
+  local test_case=$(cat -)
 
-  local test="$REPO/examples/$puzzle.yaml"
-
-  if [[ ! -r "$test" ]]; then
-    echo "No example file named $puzzle.yaml in examples folder" >&2
-    return 1
-  fi
-
-  local input
-  local expected
-  local actual
-
-  input=$(yq '.input' "$test")
-  expected=$(yq '.output' "$test")
-  actual=$(run_solution "$language" "$puzzle" "$input");
+  local input=$(echo "$test_case" | yq '.input')
+  local expected=$(echo "$test_case" | yq '.output')
+  local actual=$(run_solution "$language" "$puzzle" "$input")
 
   if [[ "$actual" == "$expected" ]]; then
     echo "Test passed!!!"
@@ -158,6 +149,41 @@ function run_test() {
 
     return 1
   fi
+}
+
+function run_test() {
+  local language="$1"
+  local puzzle="$2"
+
+  local tests_file="$REPO/examples/$puzzle.yaml"
+
+  if [[ ! -r "$tests_file" ]]; then
+    echo "No example file named $puzzle.yaml in examples folder" >&2
+    return 1
+  fi
+
+  # transform single test cases into array with `[] + .`
+  # then flatten them into lines with `.[]`
+  readarray test_cases < <(yq -o=j -I=0 '[] + . | .[]' "$tests_file");
+  local length=${#test_cases[@]}
+
+  set +e
+  local fail=0
+  for i in "${!test_cases[@]}"; do
+    echo "${test_cases[$i]}" | run_test_case
+    if [[ $? -ne 0 ]]; then
+      fail=1
+    fi
+
+    if [[ $i -ne $((length - 1)) ]]; then
+      echo ""
+      echo "++++++++++++++++++++++++++++++"
+      echo ""
+    fi
+  done
+  set -e
+
+  return $fail
 }
 
 function remove_solver() {

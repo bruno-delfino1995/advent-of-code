@@ -10,10 +10,10 @@ Since there are multiple inputs for the same problem and I didn’t want to publ
 
 Each language used to solve the challenges must have a basic [[https://mise.jdx.dev/configuration.html][mise config]] with a ~compile~ task to create an executable at ~solutions/<lang>/solver~. That executable must implement two simple commands:
 
-- ~list~: which must output a list of puzzles they can solve, one per line
-- ~exec <puzzle>~: to process data from stdin, and present results at stdout
+- ~list~: outputs one line for each puzzles the implementation can solve
+- ~exec <puzzle>~: process data from stdin, and shows results in stdout
 
-To run the project, all you need is to set your language of choice with ~./advent-of-code --setup -l <lang>~ and then solve the challenges with ~./advent-of-code yYYYYdDDp{1,2} -l lang~.
+To run the project, all you need is to set your language of choice with ~./advent-of-code --setup -l <lang>~, and then solve the challenges with ~./advent-of-code yYYYYdDDp{1,2} -l lang~.
 
 * Tips
 
