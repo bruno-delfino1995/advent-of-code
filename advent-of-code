@@ -196,7 +196,7 @@ function remove_solver() {
 
   local dir="$REPO/solutions/$language"
 
-  if [[ ! -d "$dir" ]]; then
+  if [[ -d "$dir" ]]; then
     git worktree remove "$dir"
     git branch -d "$language"
 
