@@ -3,7 +3,7 @@ members = ["bin", "lib"]
 resolver = "3"
 
 [workspace.package]
-description = "Solutions for AOC puzzles"
+description = "Solutions for Advent of Code in Rust"
 version = "0.0.0"
 edition = "2024"
 
