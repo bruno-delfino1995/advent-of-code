@@ -29,7 +29,7 @@ EOF
 
 function list_languages() {
   # local branches except empty lines and current branch
-  local from_local=$(git branch | sed 's/^*//;s/^[[:space:]]*//')
+  local from_local=$(git branch | sed 's/^*//;s/^[[:space:]]*//;s/^+[[:space:]]//')
   # remote branches without origin prefix and current branch
   local from_remote=$(git branch --remotes | sed 's/origin\///g;/->/d')
   # capture branch name ([<name>] at the end) from a worktree list
