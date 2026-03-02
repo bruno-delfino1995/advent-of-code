@@ -1,0 +1,10 @@
+# compiled Janet images
+*.jimage
+
+# compiled JPM projects
+build/
+
+# local libraries
+jpm_tree/
+
+solver

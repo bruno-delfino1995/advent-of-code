@@ -1,0 +1,16 @@
+[tools]
+# "github:janet-lang/janet" = "1.41.2"
+# Although the above would work to bring Janet's binary,
+# there's no straigthforward way of bringing jpm yet.
+# I'll be using what's installed at the system level.
+
+[env]
+LANGUAGE = "janet"
+
+[tasks.compile]
+quiet = true
+run = [
+  "jpm -l load-lockfile",
+  "jpm build",
+  "cp build/solver ./solver"
+]
