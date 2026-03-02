@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+IFS=$'\n\t'
+
+DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+
+cd "$DIR" || exit 1
+
+case $1 in
+  list)
+    mix list
+    exit $?
+    ;;
+  solve)
+    mix solve $2
+    exit $?
+    ;;
+  *)
+    echo "Unknown command: $1"
+    exit 1
+    ;;
+esac

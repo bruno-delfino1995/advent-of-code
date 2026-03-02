@@ -1,22 +1,13 @@
 [env]
-LANGUAGE="elixir"
+LANGUAGE = "elixir"
 
 [tools]
-elixir="1.18.4-otp-28"
-erlang="28.0.1"
+elixir = "1.18.4-otp-28"
+erlang = "28.0.1"
 
-[tasks.setup]
-quiet=true
-run="mix do deps.get, deps.compile"
-
-[tasks.prepare]
-quiet=true
-run="mix compile"
-
-[tasks.list]
-quiet=true
-run="mix list"
-
-[tasks.solve]
-quiet=true
-run="mix solve"
+[tasks.compile]
+quiet = true
+run = [
+  "mix do deps.get, deps.compile",
+  "mix compile"
+]

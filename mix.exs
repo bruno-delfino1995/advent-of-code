@@ -4,6 +4,7 @@ defmodule AdventOfCode.MixProject do
   def project do
     [
       app: :advent_of_code,
+      description: "Solutions for Advent of Code in Elixir",
       version: "0.0.0",
       elixir: "~> 1.18",
       deps: deps()
@@ -11,9 +12,7 @@ defmodule AdventOfCode.MixProject do
   end
 
   def application do
-    [
-      extra_applications: [:logger]
-    ]
+    []
   end
 
   defp deps do
