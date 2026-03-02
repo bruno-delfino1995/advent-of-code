@@ -70,6 +70,11 @@ function create_solver() {
 
   if [[ ! -d "$dir" ]]; then
     git worktree add --orphan -b "$language" "$dir" > /dev/null
+
+    cd "$dir" || return 1
+    touch .mise.toml
+    ln -s ../../advent-of-code advent-of-code
+
     echo "Worktree created at $dir"
 
     return 0
